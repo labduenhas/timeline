@@ -1,0 +1,25 @@
+name = "acervo-timeline"
+main = "worker/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "acervo-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "acervo-files"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "00000000000000000000000000000000"
+
+[vars]
+ADMIN_SECRET = "acervo-super-secret-key-2026"
+PUBLIC_R2_URL = "https://acervo-files.r2.dev"
+
+[dev]
+port = 8787
+local_protocol = "http"

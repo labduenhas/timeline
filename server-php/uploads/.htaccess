@@ -1,0 +1,11 @@
+# Prevenir execução de scripts PHP na pasta de uploads
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|phps|cgi|pl|exe)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Permitir leitura pública de arquivos de mídia
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Cache-Control "max-age=2592000, public"
+</IfModule>

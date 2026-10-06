@@ -10,8 +10,8 @@ define('DB_USER', 'anarcopu_timeline');     // Usuário do banco
 define('DB_PASS', 'SUA_SENHA_AQUI');        // Senha definida no DirectAdmin
 define('DB_CHARSET', 'utf8mb4');
 
-// Chave secreta de administração (a mesma usada no painel React)
-define('ADMIN_SECRET', 'acervo-super-secret-key-2026');
+$adminSecret = getenv('ADMIN_SECRET');
+define('ADMIN_SECRET', is_string($adminSecret) ? $adminSecret : '');
 
 // Diretório local onde os arquivos e imagens serão salvos
 define('UPLOADS_DIR', __DIR__ . '/uploads');

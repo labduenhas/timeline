@@ -1,23 +1,33 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Share2, X } from 'lucide-react'
+import { ArrowUpRight, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react'
 import type { DocumentItem } from '@/types'
 import { formatDate, formatViews, getTypeIconEmoji, getTypeLabel } from '@/lib/utils'
 
 interface DocumentModalProps {
   doc: DocumentItem | null
   onClose: () => void
+  onPrevious?: () => void
+  onNext?: () => void
 }
 
-export function DocumentModal({ doc, onClose }: DocumentModalProps) {
+export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModalProps) {
   useEffect(() => {
     if (!doc) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft' && onPrevious) {
+        e.preventDefault()
+        onPrevious()
+      }
+      if (e.key === 'ArrowRight' && onNext) {
+        e.preventDefault()
+        onNext()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doc, onClose])
+  }, [doc, onClose, onPrevious, onNext])
 
   if (!doc) return null
 
@@ -40,12 +50,37 @@ export function DocumentModal({ doc, onClose }: DocumentModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-primary/70 backdrop-blur-sm flex items-center justify-center p-4"
+      data-inspector
+      className="fixed inset-0 z-50 bg-primary/70 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="relative w-full max-w-4xl bg-surface-container-lowest rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+      {onPrevious && (
+        <button
+          type="button"
+          aria-label="Documento anterior"
+          onClick={onPrevious}
+          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-surface/90 text-on-surface hover:bg-surface shadow-lg backdrop-blur-md flex items-center justify-center transition-colors"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+      )}
+      {onNext && (
+        <button
+          type="button"
+          aria-label="Próximo documento"
+          onClick={onNext}
+          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-surface/90 text-on-surface hover:bg-surface shadow-lg backdrop-blur-md flex items-center justify-center transition-colors"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+      )}
+      <div className="absolute inset-0 flex items-center justify-center px-16 sm:px-24 pointer-events-none">
+      <div
+        className="pointer-events-auto relative w-full max-w-4xl bg-surface-container-lowest rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           type="button"
           aria-label="Fechar janela"
@@ -145,6 +180,7 @@ export function DocumentModal({ doc, onClose }: DocumentModalProps) {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

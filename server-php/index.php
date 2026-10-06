@@ -45,12 +45,20 @@ function jsonResponse($data, $status = 200) {
     exit;
 }
 
+function likeContains($term) {
+    $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $term);
+    return '%' . $escaped . '%';
+}
+
 function requireAuth() {
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     $token = trim(preg_replace('/^Bearer\s+/i', '', $authHeader));
 
-    if (!$token || $token !== ADMIN_SECRET) {
+    if (ADMIN_SECRET === '') {
+        jsonResponse(['error' => 'O painel administrativo não está disponível.'], 503);
+    }
+    if (!$token || !hash_equals(ADMIN_SECRET, $token)) {
         jsonResponse(['error' => 'Autorização necessária ou token inválido.'], 401);
     }
 }
@@ -145,8 +153,9 @@ if ($path === '/timeline' && $method === 'GET') {
         $params[] = "{$to}-12-31";
     }
     if ($search) {
-        $query .= " AND (d.title LIKE ? OR d.description LIKE ? OR d.author LIKE ?)";
-        $term = "%{$search}%";
+        $query .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.description LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\' OR SUBSTRING(d.doc_date, 1, 4) LIKE ? ESCAPE '\\\\')";
+        $term = likeContains($search);
+        $params[] = $term;
         $params[] = $term;
         $params[] = $term;
         $params[] = $term;
@@ -239,10 +248,12 @@ if ($path === '/docs' && $method === 'GET') {
     $params = [];
 
     if ($search) {
-        $where .= " AND (d.title LIKE ? OR d.description LIKE ? OR d.author LIKE ?)";
-        $params[] = "%{$search}%";
-        $params[] = "%{$search}%";
-        $params[] = "%{$search}%";
+        $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.description LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\' OR SUBSTRING(d.doc_date, 1, 4) LIKE ? ESCAPE '\\\\')";
+        $term = likeContains($search);
+        $params[] = $term;
+        $params[] = $term;
+        $params[] = $term;
+        $params[] = $term;
     }
     if ($category) {
         $where .= " AND EXISTS (SELECT 1 FROM document_categories dc JOIN categories c ON dc.category_id = c.id WHERE dc.document_id = d.id AND c.slug = ?)";
@@ -683,11 +694,15 @@ if ($path === '/upload' && $method === 'POST') {
 
 // 12. Autenticação Admin: POST /admin/verify
 if ($path === '/admin/verify' && $method === 'POST') {
-    $secret = $body['secret'] ?? '';
-    if ($secret === ADMIN_SECRET) {
-        jsonResponse(['ok' => true, 'valid' => true]);
+    if (ADMIN_SECRET === '') {
+        jsonResponse(['error' => 'O painel administrativo não está disponível.'], 503);
     }
-    jsonResponse(['error' => 'Chave de administração inválida'], 401);
+    $secret = isset($body['secret']) && is_string($body['secret']) ? $body['secret'] : '';
+    $honeypot = isset($body['website']) && is_string($body['website']) ? trim($body['website']) : '';
+    if ($honeypot !== '' || !hash_equals(ADMIN_SECRET, $secret)) {
+        jsonResponse(['error' => 'Chave de administração inválida'], 401);
+    }
+    jsonResponse(['ok' => true, 'valid' => true]);
 }
 
 // 13. Estatísticas Admin: GET /admin/stats

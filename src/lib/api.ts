@@ -180,10 +180,10 @@ export const api = {
   },
 
   // Admin
-  verifySecret: (secret: string) => {
-    return fetchWithRetry<{ ok: boolean; valid: boolean }>(`${API_BASE}/admin/verify`, {
+  verifySecret: (secret: string, website = '') => {
+    return fetchWithRetry<{ ok: boolean; token: string; expires_at: number }>(`${API_BASE}/admin/verify`, {
       method: 'POST',
-      body: JSON.stringify({ secret }),
+      body: JSON.stringify({ secret, website }),
     })
   },
 

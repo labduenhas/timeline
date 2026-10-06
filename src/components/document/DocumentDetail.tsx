@@ -5,6 +5,7 @@ import { formatDate, getTypeIconEmoji, getTypeLabel } from '@/lib/utils'
 import { MediaViewer } from './MediaViewer'
 import { DownloadButton } from './DownloadButton'
 import { Button } from '@/components/ui/Button'
+import { ArticleBody } from './ArticleBody'
 
 interface DocumentDetailProps {
   doc: DocumentDetailType
@@ -129,12 +130,7 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
           </p>
         )}
 
-        {doc.body && (
-          <div
-            className="max-w-none text-on-surface leading-relaxed space-y-4 [&_h3]:font-display [&_h3]:text-headline-sm [&_h3]:font-medium [&_p]:text-body-md [&_p]:text-on-surface-variant"
-            dangerouslySetInnerHTML={{ __html: doc.body }}
-          />
-        )}
+        {doc.body && <ArticleBody stored={doc.body} />}
 
         {(doc.file_url || doc.source_url) && (
           <div className="pt-6 border-t border-outline-variant/70 flex flex-wrap items-center justify-between gap-4">

@@ -9,7 +9,11 @@ const navItems = [
 ]
 
 function scrollToSection(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const el = document.getElementById(id)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const field = el instanceof HTMLInputElement ? el : el.querySelector('input')
+  window.setTimeout(() => field?.focus(), 280)
 }
 
 export function Header() {

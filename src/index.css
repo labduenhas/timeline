@@ -56,6 +56,146 @@ body {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Artigo do acervo: um único conjunto de tipos, medidas e cores para texto, HTML, editor e Markdown. */
+.article-body {
+  color: #1a1c1b;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.article-body > * + * {
+  margin-top: 1rem;
+}
+
+.article-body h2,
+.article-body h3,
+.article-body h4 {
+  margin-top: 1.75rem;
+  color: #1a1c1b;
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.article-body > :first-child {
+  margin-top: 0;
+}
+
+.article-body h2 {
+  font-size: 28px;
+  line-height: 36px;
+}
+
+.article-body h3 {
+  font-size: 22px;
+  line-height: 30px;
+}
+
+.article-body h4 {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.article-body p,
+.article-body li {
+  color: #444748;
+}
+
+.article-body strong,
+.article-body b {
+  color: #1a1c1b;
+  font-weight: 600;
+}
+
+.article-body em,
+.article-body i {
+  font-family: 'Newsreader', Georgia, serif;
+}
+
+.article-body a {
+  color: #8c4325;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.article-body blockquote {
+  margin-left: 0;
+  border-left: 2px solid #8c4325;
+  padding-left: 1rem;
+  color: #444748;
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.article-body blockquote p {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.article-body ul,
+.article-body ol {
+  padding-left: 1.25rem;
+}
+
+.article-body ul {
+  list-style: disc;
+}
+
+.article-body ol {
+  list-style: decimal;
+}
+
+.article-body li + li {
+  margin-top: 0.35rem;
+}
+
+.article-body code {
+  border-radius: 0.25rem;
+  background: #eeeeec;
+  padding: 0.1em 0.35em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.article-body pre {
+  overflow-x: auto;
+  border: 1px solid #c4c7c7;
+  border-radius: 0.5rem;
+  background: #f4f4f2;
+  padding: 1rem;
+}
+
+.article-body pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.article-body hr {
+  border: 0;
+  border-top: 1px solid #c4c7c7;
+}
+
+.article-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+}
+
+.article-editor {
+  min-height: 12rem;
+  outline: none;
+}
+
+.article-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #747878;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

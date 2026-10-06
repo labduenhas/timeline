@@ -3,6 +3,7 @@ import { Save, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { ArticleEditor } from './ArticleEditor'
 import { FileUploader } from './FileUploader'
 import type { Category, Tag, DocType, DatePrecision } from '@/types'
 
@@ -267,17 +268,7 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
         />
       </div>
 
-      {/* Rich Body Content */}
-      <div>
-        <label className="block text-xs font-medium text-on-surface-variant mb-1.5">Conteúdo Completo (HTML / Artigo)</label>
-        <textarea
-          rows={6}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="<p>Texto detalhado com transcrição, análise histórica e contextualização...</p>"
-          className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-3 text-sm text-on-surface font-mono placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/15"
-        />
-      </div>
+      <ArticleEditor value={body} onChange={setBody} />
 
       {/* Visibility Toggles */}
       <div className="flex items-center gap-6 pt-2">

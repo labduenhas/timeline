@@ -17,7 +17,6 @@ binding = "CACHE"
 id = "00000000000000000000000000000000"
 
 [vars]
-ADMIN_SECRET = "acervo-super-secret-key-2026"
 PUBLIC_R2_URL = "https://acervo-files.r2.dev"
 
 [dev]

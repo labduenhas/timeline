@@ -1,18 +1,40 @@
 import { Hono } from 'hono'
 import type { Env } from '../index'
-import { authMiddleware } from '../lib/auth'
+import {
+  adminSecret,
+  attemptsExceeded,
+  authMiddleware,
+  clearAttempts,
+  clientAddress,
+  passwordsMatch,
+  recordFailedAttempt,
+  signSession,
+} from '../lib/auth'
 
 export const adminRouter = new Hono<{ Bindings: Env }>()
 
-// POST /api/admin/verify (Verify secret token)
 adminRouter.post('/verify', async (c) => {
-  const { secret } = await c.req.json<{ secret?: string }>()
-  const expected = c.env.ADMIN_SECRET || 'acervo-super-secret-key-2026'
-
-  if (secret === expected) {
-    return c.json({ ok: true, valid: true })
+  const secret = adminSecret(c.env)
+  if (!secret) {
+    return c.json({ error: 'O painel administrativo não está disponível.' }, 503)
   }
-  return c.json({ error: 'Chave de administração inválida' }, 401)
+
+  const address = clientAddress(c)
+  if (await attemptsExceeded(c.env, address)) {
+    return c.json({ error: 'Muitas tentativas. Aguarde alguns minutos.' }, 429)
+  }
+
+  const body = await c.req.json<{ secret?: string; website?: string }>().catch(() => null)
+  const provided = body?.secret || ''
+  const honeypot = body?.website?.trim() || ''
+  if (honeypot || !(await passwordsMatch(provided, secret))) {
+    await recordFailedAttempt(c.env, address)
+    return c.json({ error: 'Chave de administração inválida' }, 401)
+  }
+
+  await clearAttempts(c.env, address)
+  const session = await signSession(secret)
+  return c.json({ ok: true, token: session.token, expires_at: session.expires_at })
 })
 
 // GET /api/admin/stats (Protected)

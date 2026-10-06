@@ -23,6 +23,7 @@ export function AdminPage() {
   const [token, setToken] = useState<string>(() => localStorage.getItem('acervo_admin_token') || '')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [secretInput, setSecretInput] = useState('')
+  const [website, setWebsite] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
 
@@ -38,16 +39,24 @@ export function AdminPage() {
     setIsVerifying(true)
     setLoginError(null)
     try {
-      localStorage.setItem('acervo_admin_token', secret)
-      await api.verifySecret(secret)
+      const session = await api.verifySecret(secret, website)
+      localStorage.setItem('acervo_admin_token', session.token)
+      setToken(session.token)
       setIsAuthenticated(true)
-      setToken(secret)
+      setSecretInput('')
       loadAdminData()
     } catch (err: any) {
       console.error('[Admin verify error]', err)
-      setLoginError(err.message || 'Chave de administração incorreta.')
       localStorage.removeItem('acervo_admin_token')
+      setToken('')
       setIsAuthenticated(false)
+      setLoginError(
+        err.status === 429
+          ? 'Muitas tentativas. Aguarde alguns minutos.'
+          : err.status === 503
+            ? 'O painel administrativo não está disponível.'
+            : 'Chave de administração incorreta.'
+      )
     } finally {
       setIsVerifying(false)
     }
@@ -71,8 +80,22 @@ export function AdminPage() {
   }
 
   useEffect(() => {
-    if (token) {
-      verifyAndLogin(token)
+    if (!token) return
+    let cancelled = false
+    api.getAdminStats()
+      .then(() => {
+        if (cancelled) return
+        setIsAuthenticated(true)
+        loadAdminData()
+      })
+      .catch(() => {
+        if (cancelled) return
+        localStorage.removeItem('acervo_admin_token')
+        setToken('')
+        setIsAuthenticated(false)
+      })
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -103,15 +126,27 @@ export function AdminPage() {
               e.preventDefault()
               verifyAndLogin(secretInput)
             }}
-            className="space-y-4"
+            className="relative space-y-4"
           >
+            <div className="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
+              <label htmlFor="website">Deixe este campo em branco</label>
+              <input
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+            </div>
             <Input
               type="password"
-              placeholder="Chave de Acesso (ADMIN_SECRET)"
+              placeholder="Frase de acesso"
               value={secretInput}
               onChange={(e) => setSecretInput(e.target.value)}
               error={loginError || undefined}
               required
+              autoComplete="current-password"
             />
 
             <Button
@@ -124,10 +159,6 @@ export function AdminPage() {
               Acessar Painel
             </Button>
           </form>
-
-          <p className="text-[11px] text-center text-outline font-mono">
-            Chave padrão local: <code>acervo-super-secret-key-2026</code>
-          </p>
         </div>
       </div>
     )

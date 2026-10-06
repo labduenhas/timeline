@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { AlertCircle, ArrowLeft, ArrowRight, FolderArchive, RefreshCw, Search } from 'lucide-react'
+import { AlertCircle, ArrowLeft, ArrowRight, FolderArchive, RefreshCw, Search, X } from 'lucide-react'
 import { useTimeline } from '@/hooks/useTimeline'
 import { api } from '@/lib/api'
 import { FilterBar } from './FilterBar'
@@ -16,6 +16,10 @@ function eraLabel(period: PeriodBackground) {
   return `${period.year_start} • ${short}`
 }
 
+function matchesDocumentYear(docDate: string, term: string) {
+  return docDate.slice(0, 4).includes(term)
+}
+
 export function TimelineContainer() {
   const location = useLocation()
   const trackRef = useRef<HTMLDivElement>(null)
@@ -27,6 +31,8 @@ export function TimelineContainer() {
   const [activeIndex, setActiveIndex] = useState(1)
   const [activeEra, setActiveEra] = useState<number | null>(null)
   const [catalogTotal, setCatalogTotal] = useState<number | null>(null)
+  const [catalogItems, setCatalogItems] = useState<DocumentItem[]>([])
+  const [catalogFeatured, setCatalogFeatured] = useState<DocumentItem[]>([])
   const [tags, setTags] = useState<Tag[]>([])
 
   const { items, periodBackgrounds, total, loading, error, refetch } = useTimeline({
@@ -34,9 +40,8 @@ export function TimelineContainer() {
     search,
   })
 
-  const featured = useMemo(() => items.filter((item) => item.is_featured), [items])
-  const hero = featured[0]
-  const side = featured.slice(1, 3)
+  const hero = catalogFeatured[0]
+  const side = catalogFeatured.slice(1, 3)
 
   const handleActiveIndex = useCallback((index: number) => {
     setActiveIndex(index)
@@ -44,8 +49,18 @@ export function TimelineContainer() {
 
   useEffect(() => {
     api.getCategories().then((res) => setTags(res.tags || [])).catch(console.error)
-    api.getTimeline().then((res) => setCatalogTotal(res.total)).catch(console.error)
+    api.getTimeline().then((res) => {
+      const docs = res.items || []
+      setCatalogTotal(res.total)
+      setCatalogItems(docs)
+      setCatalogFeatured(docs.filter((item) => item.is_featured))
+    }).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setSearch(query.trim()), 280)
+    return () => window.clearTimeout(handle)
+  }, [query])
 
   useEffect(() => {
     const id = location.hash.replace('#', '')
@@ -56,8 +71,21 @@ export function TimelineContainer() {
     return () => window.clearTimeout(timer)
   }, [location.hash, loading])
 
+  const visibleItems = useMemo(() => {
+    const term = search.trim()
+    if (!/^\d{2,4}$/.test(term)) return items
+    const seen = new Set(items.map((item) => item.id))
+    const byYear = catalogItems.filter((item) => {
+      if (seen.has(item.id) || !matchesDocumentYear(item.doc_date, term)) return false
+      if (category && !(item.categories || []).some((entry) => entry.slug === category)) return false
+      return true
+    })
+    if (byYear.length === 0) return items
+    return [...items, ...byYear].sort((a, b) => a.doc_date.localeCompare(b.doc_date))
+  }, [items, catalogItems, search, category])
+
   useEffect(() => {
-    const current = items[activeIndex - 1]
+    const current = visibleItems[activeIndex - 1]
     if (!current?.doc_date) {
       setActiveEra(null)
       return
@@ -65,7 +93,7 @@ export function TimelineContainer() {
     const year = Number(current.doc_date.substring(0, 4))
     const match = periodBackgrounds.find((period) => year >= period.year_start && year <= period.year_end)
     setActiveEra(match ? match.year_start : null)
-  }, [activeIndex, items, periodBackgrounds])
+  }, [activeIndex, visibleItems, periodBackgrounds])
 
   const applySearch = (value: string) => {
     setQuery(value)
@@ -75,24 +103,56 @@ export function TimelineContainer() {
   return (
     <div className="flex flex-col w-full text-on-surface">
       <section className="max-w-[1440px] mx-auto w-full px-4 sm:px-8 lg:px-margin-desktop pt-8 pb-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-3 mb-3 flex-wrap">
-              <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-terracotta text-white text-label-sm uppercase tracking-widest">
-                Arquivo Aberto
-              </span>
-              <span className="text-label-sm uppercase tracking-widest text-outline">
-                Catálogo crítico de obras
-              </span>
-            </div>
-            <h1 className="font-display text-4xl sm:text-display-xl text-primary font-normal tracking-tight leading-[1.08]">
-              Explore por período e movimento
-            </h1>
-            <p className="text-body-lg text-on-surface-variant mt-4 max-w-2xl">
-              Marcos, iconografias fundadoras e documentos raros do patrimônio visual e político, estruturados em linha contínua do tempo.
-            </p>
+        <div className="max-w-3xl pb-8">
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-terracotta text-white text-label-sm uppercase tracking-widest">
+              Arquivo Aberto
+            </span>
+            <span className="text-label-sm uppercase tracking-widest text-outline">
+              Catálogo crítico de obras
+            </span>
           </div>
-          <div className="flex items-center gap-4 self-start md:self-end">
+          <h1 className="font-display text-4xl sm:text-display-xl text-primary font-normal tracking-tight leading-[1.08]">
+            Explore por período e movimento
+          </h1>
+          <p className="text-body-lg text-on-surface-variant mt-4 max-w-2xl">
+            Marcos, iconografias fundadoras e documentos raros do patrimônio visual e político, estruturados em linha contínua do tempo.
+          </p>
+        </div>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <form
+          id="pesquisa"
+          className="w-full max-w-2xl min-w-0 scroll-mt-28"
+          onSubmit={(e) => {
+            e.preventDefault()
+            setSearch(query.trim())
+          }}
+        >
+          <label htmlFor="pesquisa-campo" className="sr-only">Pesquisar no acervo</label>
+          <div className="relative flex items-center bg-surface-container-lowest rounded-full border border-outline-variant/70 shadow-sm">
+            <Search className="absolute left-4 w-4 h-4 text-outline pointer-events-none" />
+            <input
+              id="pesquisa-campo"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full py-3 pl-11 pr-12 bg-transparent text-on-surface placeholder:text-outline text-body-md focus:outline-none"
+              placeholder="Buscar por título, autor ou ano..."
+              type="text"
+              autoComplete="off"
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                onClick={() => applySearch('')}
+                className="absolute right-3 w-8 h-8 rounded-full text-outline hover:text-on-surface hover:bg-surface-container flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </form>
+          <div className="flex items-center gap-4 shrink-0 self-end md:self-center">
             <div className="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-full">
               <span className="w-2 h-2 rounded-full bg-terracotta animate-pulse" />
               <span className="text-label-sm tracking-wider uppercase pl-1 text-on-surface-variant">
@@ -119,7 +179,24 @@ export function TimelineContainer() {
             </div>
           </div>
         </div>
-        <FilterBar category={category} onCategoryChange={setCategory} />
+        {tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-body-sm text-on-surface-variant">
+            <span className="text-outline">Termos frequentes</span>
+            {tags.slice(0, 4).map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                className="hover:text-primary underline underline-offset-4"
+                onClick={() => applySearch(tag.name)}
+              >
+                {tag.name}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="mt-5">
+          <FilterBar category={category} onCategoryChange={setCategory} />
+        </div>
       </section>
 
       {periodBackgrounds.length > 0 && (
@@ -147,14 +224,14 @@ export function TimelineContainer() {
             </div>
             <div className="hidden lg:flex items-center gap-3 shrink-0">
               <span className="text-label-md text-primary font-medium tracking-tight">
-                {items.length === 0 ? '0 itens' : `${activeIndex} de ${items.length} itens`}
+                {visibleItems.length === 0 ? '0 itens' : `${activeIndex} de ${visibleItems.length} itens`}
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {loading ? (
+      {loading && visibleItems.length === 0 && !error ? (
         <div className="w-full px-4 sm:px-8 lg:px-margin-desktop py-10 flex gap-8 overflow-x-hidden">
           {[1, 2, 3].map((i) => (
             <div key={i} className="w-[340px] sm:w-[410px] flex-shrink-0 space-y-3">
@@ -164,7 +241,7 @@ export function TimelineContainer() {
             </div>
           ))}
         </div>
-      ) : error ? (
+      ) : error && visibleItems.length === 0 ? (
         <div className="max-w-md mx-auto my-12 p-6 rounded-2xl bg-surface-container-lowest border border-rose-200 text-center space-y-4 shadow-sm">
           <AlertCircle className="w-12 h-12 text-rose-700 mx-auto" />
           <h3 className="text-lg font-display text-primary">Falha ao carregar o acervo</h3>
@@ -173,7 +250,7 @@ export function TimelineContainer() {
             <RefreshCw className="w-4 h-4 mr-2" /> Tentar novamente
           </Button>
         </div>
-      ) : items.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <div className="max-w-md mx-auto my-16 p-8 rounded-3xl bg-surface-container-lowest border border-outline-variant text-center space-y-4">
           <FolderArchive className="w-8 h-8 mx-auto text-outline" />
           <h3 className="text-xl font-display text-primary">Nenhum documento encontrado</h3>
@@ -193,14 +270,14 @@ export function TimelineContainer() {
         </div>
       ) : (
         <TimelineTrack
-          items={items}
+          items={visibleItems}
           containerRef={trackRef}
           onQuickViewDoc={setQuickDoc}
           onActiveIndexChange={handleActiveIndex}
         />
       )}
 
-      {featured.length > 0 && (
+      {catalogFeatured.length > 0 && (
         <section className="max-w-[1440px] mx-auto w-full px-4 sm:px-8 lg:px-margin-desktop py-16">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8">
             <div>
@@ -281,59 +358,26 @@ export function TimelineContainer() {
         </section>
       )}
 
-      <section id="pesquisa" className="w-full bg-surface-container py-16 scroll-mt-28">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop">
-          <div className="max-w-3xl mx-auto text-center mb-8">
-            <h3 className="font-display text-headline-lg text-primary font-normal">
-              Pesquisa no Acervo Histórico
-            </h3>
-            <p className="text-body-md text-on-surface-variant mt-2">
-              Localize manuscritos, pinturas e registros pelo título, autor ou período.
-            </p>
-          </div>
-          <form
-            className="relative flex items-center max-w-3xl mx-auto bg-surface-container-lowest rounded-full shadow-sm overflow-hidden"
-            onSubmit={(e) => {
-              e.preventDefault()
-              setSearch(query)
-            }}
-          >
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full py-4 pl-6 pr-16 bg-transparent text-on-surface placeholder:text-outline text-body-md focus:outline-none"
-              placeholder="Buscar por título, autor, movimento, cidade ou período histórico..."
-              type="text"
-            />
-            <button
-              aria-label="Executar busca"
-              className="absolute right-2 w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-terracotta transition-colors"
-              type="submit"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-          </form>
-          {tags.length > 0 && (
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-on-surface-variant text-body-sm">
-              <span className="text-outline font-medium">Termos frequentes:</span>
-              {tags.slice(0, 4).map((tag, index) => (
-                <span key={tag.id} className="flex items-center gap-2">
-                  {index > 0 && <span className="text-outline-variant">•</span>}
-                  <button
-                    type="button"
-                    className="hover:text-primary underline underline-offset-4"
-                    onClick={() => applySearch(tag.name)}
-                  >
-                    {tag.name}
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <DocumentModal doc={quickDoc} onClose={() => setQuickDoc(null)} />
+      <DocumentModal
+        doc={quickDoc}
+        onClose={() => setQuickDoc(null)}
+        onPrevious={
+          quickDoc && visibleItems.findIndex((item) => item.id === quickDoc.id) > 0
+            ? () => {
+                const index = visibleItems.findIndex((item) => item.id === quickDoc.id)
+                setQuickDoc(visibleItems[index - 1])
+              }
+            : undefined
+        }
+        onNext={
+          quickDoc && visibleItems.findIndex((item) => item.id === quickDoc.id) < visibleItems.length - 1
+            ? () => {
+                const index = visibleItems.findIndex((item) => item.id === quickDoc.id)
+                setQuickDoc(visibleItems[index + 1])
+              }
+            : undefined
+        }
+      />
     </div>
   )
 }

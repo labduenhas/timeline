@@ -50,13 +50,7 @@ app.notFound((c) => {
 // Error Boundary Handler
 app.onError((err, c) => {
   console.error('[Worker Unhandled Error]:', err)
-  return c.json(
-    {
-      error: 'Erro interno no servidor',
-      message: err.message || 'Ocorreu um erro inesperado ao processar a requisição',
-    },
-    500
-  )
+  return c.json({ error: 'Erro interno no servidor' }, 500)
 })
 
 export default app

@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { Env } from '../index'
 import { getPublicUrl } from '../lib/r2'
+import { likeContains } from '../lib/like'
 import type { PeriodBackgroundRow } from '../lib/db'
 
 export const timelineRouter = new Hono<{ Bindings: Env }>()
@@ -54,8 +55,9 @@ timelineRouter.get('/', async (c) => {
       params.push(`${to}-12-31`)
     }
     if (search) {
-      query += ` AND (d.title LIKE ? OR d.description LIKE ? OR d.author LIKE ?)`
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`)
+      query += ` AND (d.title LIKE ? ESCAPE '\\' OR d.description LIKE ? ESCAPE '\\' OR d.author LIKE ? ESCAPE '\\' OR substr(d.doc_date, 1, 4) LIKE ? ESCAPE '\\')`
+      const term = likeContains(search)
+      params.push(term, term, term, term)
     }
     if (tags) {
       const tagList = tags.split(',').map((s) => s.trim()).filter(Boolean)

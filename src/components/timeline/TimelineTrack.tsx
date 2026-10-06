@@ -50,6 +50,7 @@ export function TimelineTrack({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!containerRef.current) return
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (document.querySelector('[data-inspector]')) return
       if (e.key === 'ArrowRight') scrollTimelineBy(containerRef.current, 1)
       if (e.key === 'ArrowLeft') scrollTimelineBy(containerRef.current, -1)
     }

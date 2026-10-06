@@ -57,9 +57,9 @@ export function CategoryManager({ categories, tags, onRefresh }: CategoryManager
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Category Creation & List */}
-      <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-4">
-        <h4 className="text-sm font-bold text-white flex items-center gap-2">
-          <Palette className="w-4 h-4 text-indigo-400" />
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 space-y-4">
+        <h4 className="text-sm font-bold text-on-surface flex items-center gap-2">
+          <Palette className="w-4 h-4 text-terracotta" />
           <span>Categorias Temáticas ({categories.length})</span>
         </h4>
 
@@ -75,7 +75,7 @@ export function CategoryManager({ categories, tags, onRefresh }: CategoryManager
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="w-12 h-10 rounded-lg cursor-pointer bg-gray-800 border border-gray-700"
+              className="w-12 h-10 rounded-lg cursor-pointer bg-surface-container border border-outline-variant"
             />
           </div>
           <Input
@@ -88,23 +88,23 @@ export function CategoryManager({ categories, tags, onRefresh }: CategoryManager
           </Button>
         </form>
 
-        <div className="pt-2 divide-y divide-white/5 max-h-56 overflow-y-auto">
+        <div className="pt-2 divide-y divide-outline-variant/60 max-h-56 overflow-y-auto">
           {categories.map((c) => (
             <div key={c.id} className="py-2 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                <span className="font-semibold text-white">{c.name}</span>
+                <span className="font-semibold text-on-surface">{c.name}</span>
               </div>
-              <span className="text-gray-500 font-mono">{c.doc_count || 0} docs</span>
+              <span className="text-outline font-mono">{c.doc_count || 0} docs</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Tag Creation & List */}
-      <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-4">
-        <h4 className="text-sm font-bold text-white flex items-center gap-2">
-          <TagIcon className="w-4 h-4 text-indigo-400" />
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 space-y-4">
+        <h4 className="text-sm font-bold text-on-surface flex items-center gap-2">
+          <TagIcon className="w-4 h-4 text-terracotta" />
           <span>Etiquetas e Tags ({tags.length})</span>
         </h4>
 
@@ -119,7 +119,7 @@ export function CategoryManager({ categories, tags, onRefresh }: CategoryManager
             type="color"
             value={tagColor}
             onChange={(e) => setTagColor(e.target.value)}
-            className="w-12 h-10 rounded-lg cursor-pointer bg-gray-800 border border-gray-700"
+            className="w-12 h-10 rounded-lg cursor-pointer bg-surface-container border border-outline-variant"
           />
           <Button type="submit" size="sm" loading={isSubmittingTag}>
             <Plus className="w-4 h-4" />
@@ -130,7 +130,7 @@ export function CategoryManager({ categories, tags, onRefresh }: CategoryManager
           {tags.map((t) => (
             <span
               key={t.id}
-              className="text-xs px-2.5 py-1 rounded-lg border border-white/10 bg-gray-800/80 text-gray-300 font-mono"
+              className="text-xs px-2.5 py-1 rounded-lg border border-outline-variant bg-surface-container text-on-surface-variant font-mono"
             >
               #{t.name}
             </span>

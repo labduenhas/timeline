@@ -2,46 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --color-bg: #030712;
-  --color-surface: #111827;
-  --color-surface-2: #1f2937;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-text: #f9fafb;
-  --color-text-muted: #9ca3af;
-  --color-accent: #6366f1;
-  --timeline-height: 2px;
-  --card-width-desktop: 224px;
-  --card-width-mobile: 160px;
-}
-
 body {
-  background-color: #030712;
-  color: #f9fafb;
+  background-color: #f9f9f7;
+  color: #1a1c1b;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(3, 7, 18, 0.6);
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.3);
-  border-radius: 4px;
+/* Horizontal museum track: native pan for touch/trackpad, mouse drag without image ghosting. */
+.timeline-scroller {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.6);
+.timeline-scroller.is-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
 }
 
-/* Animations */
+.timeline-scroller img {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -57,7 +56,6 @@ body {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

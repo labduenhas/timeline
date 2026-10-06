@@ -39,21 +39,21 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
   }
 
   return (
-    <div className="bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-2xl">
       {/* Header bar */}
-      <div className="p-4 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 border-b border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h4 className="text-base font-bold text-white">Catálogo Geral de Documentos</h4>
-          <p className="text-xs text-gray-400">Total de {documents.length} registros cadastrados</p>
+          <h4 className="text-base font-bold text-on-surface">Catálogo Geral de Documentos</h4>
+          <p className="text-xs text-outline">Total de {documents.length} registros cadastrados</p>
         </div>
         <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
           <input
             type="text"
             placeholder="Filtrar por título ou autor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 bg-gray-950 border border-gray-700 rounded-lg text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full pl-9 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary/20"
           />
         </div>
       </div>
@@ -62,7 +62,7 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-white/5 bg-gray-950/40 text-gray-400 font-mono uppercase text-[10px]">
+            <tr className="border-b border-outline-variant/60 bg-surface-container-low text-outline font-mono uppercase text-[10px]">
               <th className="py-3 px-4">Documento</th>
               <th className="py-3 px-4">Data Histórica</th>
               <th className="py-3 px-4">Tipo</th>
@@ -71,20 +71,20 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
               <th className="py-3 px-4 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-outline-variant/60">
             {filteredDocs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-gray-500">
+                <td colSpan={6} className="py-8 text-center text-outline">
                   Nenhum documento encontrado.
                 </td>
               </tr>
             ) : (
               filteredDocs.map((doc) => (
-                <tr key={doc.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={doc.id} className="hover:bg-surface-container transition-colors">
                   {/* Thumbnail & Title */}
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-800 flex-shrink-0 overflow-hidden flex items-center justify-center border border-white/10">
+                      <div className="w-10 h-10 rounded-lg bg-surface-container flex-shrink-0 overflow-hidden flex items-center justify-center border border-outline-variant">
                         {doc.thumbnail_url ? (
                           <img
                             src={doc.thumbnail_url}
@@ -99,7 +99,7 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
                       </div>
                       <div className="min-w-0 max-w-xs">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-white truncate block">
+                          <span className="font-semibold text-on-surface truncate block">
                             {doc.title}
                           </span>
                           {doc.is_featured && (
@@ -107,7 +107,7 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
                           )}
                         </div>
                         {doc.author && (
-                          <span className="text-[11px] text-gray-400 truncate block">
+                          <span className="text-[11px] text-outline truncate block">
                             {doc.author}
                           </span>
                         )}
@@ -116,13 +116,13 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
                   </td>
 
                   {/* Date */}
-                  <td className="py-3 px-4 font-mono text-gray-300 whitespace-nowrap">
+                  <td className="py-3 px-4 font-mono text-on-surface-variant whitespace-nowrap">
                     {formatDate(doc.doc_date, doc.date_precision)}
                   </td>
 
                   {/* Type */}
                   <td className="py-3 px-4 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-800 border border-white/10 text-[11px] text-gray-300">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container border border-outline-variant text-[11px] text-on-surface-variant">
                       <span>{getTypeIconEmoji(doc.doc_type)}</span>
                       <span className="capitalize">{doc.doc_type.replace('_', ' ')}</span>
                     </span>
@@ -148,7 +148,7 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
                   </td>
 
                   {/* Views */}
-                  <td className="py-3 px-4 text-center font-mono text-gray-400">
+                  <td className="py-3 px-4 text-center font-mono text-outline">
                     {doc.view_count || 0}
                   </td>
 
@@ -156,14 +156,14 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
                   <td className="py-3 px-4 text-right whitespace-nowrap">
                     <div className="inline-flex items-center gap-1.5">
                       <Link to={`/doc/${doc.slug}`} target="_blank">
-                        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-400 hover:text-white" title="Ver detalhes">
+                        <Button variant="ghost" size="icon" className="w-7 h-7 text-outline hover:text-on-surface" title="Ver detalhes">
                           <ExternalLink className="w-3.5 h-3.5" />
                         </Button>
                       </Link>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="w-7 h-7 text-indigo-400 hover:text-indigo-300"
+                        className="w-7 h-7 text-terracotta hover:text-[#5c2a16]"
                         title="Editar"
                         onClick={() => onEdit(doc)}
                       >

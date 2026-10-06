@@ -24,12 +24,12 @@ export function DownloadButton({ url, filename = 'documento', className }: Downl
       <Button variant="secondary" size="sm" className="gap-2">
         {isExternal ? (
           <>
-            <ExternalLink className="w-4 h-4 text-indigo-400" />
+            <ExternalLink className="w-4 h-4" />
             <span>Acessar Arquivo Original</span>
           </>
         ) : (
           <>
-            <Download className="w-4 h-4 text-indigo-400" />
+            <Download className="w-4 h-4" />
             <span>Baixar Arquivo Digital</span>
           </>
         )}

@@ -34,7 +34,7 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
     <div className="space-y-6">
       {/* Video Embed Player */}
       {(docType === 'video_url' || embedUrl) && embedUrl && (
-        <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+        <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-outline-variant shadow-2xl">
           <iframe
             src={embedUrl}
             title={title}
@@ -47,7 +47,7 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
 
       {/* Direct Video File (R2) */}
       {docType === 'video_file' && fileUrl && (
-        <div className="w-full rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+        <div className="w-full rounded-2xl overflow-hidden bg-black border border-outline-variant shadow-2xl">
           <video
             src={fileUrl}
             controls
@@ -60,14 +60,14 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
 
       {/* Audio Player */}
       {docType === 'audio' && fileUrl && (
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-500/30 shadow-2xl space-y-3">
+        <div className="p-6 rounded-2xl bg-surface-container border border-outline-variant shadow-2xl space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary">
               <Volume2 className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white">Gravação de Áudio do Acervo</h4>
-              <p className="text-xs text-gray-400">Clique no player abaixo para ouvir o registro histórico</p>
+              <h4 className="text-sm font-semibold text-on-surface">Gravação de Áudio do Acervo</h4>
+              <p className="text-xs text-outline">Clique no player abaixo para ouvir o registro histórico</p>
             </div>
           </div>
           <audio controls className="w-full mt-2" src={fileUrl}>
@@ -78,7 +78,7 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
 
       {/* PDF Document Embedded Viewer */}
       {docType === 'pdf' && fileUrl && (
-        <div className="w-full h-[650px] rounded-2xl overflow-hidden border border-white/10 bg-gray-900 shadow-2xl">
+        <div className="w-full h-[650px] rounded-2xl overflow-hidden border border-outline-variant bg-surface-container-lowest shadow-2xl">
           <iframe
             src={`${fileUrl}#view=FitH`}
             title={`PDF: ${title}`}
@@ -90,14 +90,14 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
       {/* Attached Media Gallery */}
       {media.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider font-mono">
+          <h4 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider font-mono">
             Mídias e Anexos Relacionados ({media.length})
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {media.map((item) => (
               <div
                 key={item.id}
-                className="group relative rounded-xl overflow-hidden border border-white/10 bg-gray-900 cursor-pointer aspect-square"
+                className="group relative rounded-xl overflow-hidden border border-outline-variant bg-surface-container-lowest cursor-pointer aspect-square"
                 onClick={() => item.url && setSelectedImage(item.url)}
               >
                 {item.media_type === 'image' && item.url ? (
@@ -107,13 +107,13 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-gray-400">
-                    <FileText className="w-8 h-8 mb-2 text-indigo-400" />
+                  <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center text-outline">
+                    <FileText className="w-8 h-8 mb-2 text-terracotta" />
                     <span className="text-[11px] font-mono">{item.caption || item.media_type}</span>
                   </div>
                 )}
                 {item.caption && (
-                  <div className="absolute inset-x-0 bottom-0 bg-black/75 p-1.5 text-[10px] text-gray-300 truncate">
+                  <div className="absolute inset-x-0 bottom-0 bg-black/75 p-1.5 text-[10px] text-on-surface-variant truncate">
                     {item.caption}
                   </div>
                 )}

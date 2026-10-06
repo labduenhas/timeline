@@ -9,18 +9,18 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, children, disabled, ...props }, ref) => {
-    const base = 'inline-flex items-center justify-center font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed select-none'
+    const base = 'inline-flex items-center justify-center font-medium rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed select-none'
 
     const variants = {
-      primary: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 active:scale-[0.98]',
-      secondary: 'bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700/60 active:scale-[0.98]',
-      outline: 'bg-transparent border border-white/20 hover:bg-white/10 text-white',
-      ghost: 'bg-transparent hover:bg-white/10 text-gray-300 hover:text-white',
-      danger: 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20 active:scale-[0.98]',
+      primary: 'bg-primary hover:bg-terracotta text-on-primary',
+      secondary: 'bg-surface-container hover:bg-surface-container-highest text-on-surface',
+      outline: 'bg-transparent border border-outline-variant hover:border-primary hover:bg-surface-container-lowest text-on-surface',
+      ghost: 'bg-transparent hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface',
+      danger: 'bg-rose-700 hover:bg-rose-600 text-white',
     }
 
     const sizes = {
-      sm: 'text-xs px-2.5 py-1.5 gap-1.5',
+      sm: 'text-xs px-3 py-1.5 gap-1.5',
       md: 'text-sm px-4 py-2 gap-2',
       lg: 'text-base px-5 py-2.5 gap-2.5',
       icon: 'p-2 w-9 h-9',

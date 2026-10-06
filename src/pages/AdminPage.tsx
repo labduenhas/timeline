@@ -87,13 +87,13 @@ export function AdminPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-gray-900/90 border border-white/10 rounded-3xl p-8 backdrop-blur-xl shadow-2xl space-y-6 animate-fadeIn">
+        <div className="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-3xl p-8 backdrop-blur-xl shadow-2xl space-y-6 animate-fadeIn">
           <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center mx-auto text-indigo-400">
+            <div className="w-14 h-14 rounded-2xl bg-surface-container border border-outline-variant flex items-center justify-center mx-auto text-on-surface">
               <Lock className="w-7 h-7" />
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Painel Administrativo</h2>
-            <p className="text-xs text-gray-400">
+            <h2 className="text-2xl font-bold text-on-surface tracking-tight">Painel Administrativo</h2>
+            <p className="text-xs text-outline">
               Digite o segredo de administração para gerenciar o acervo e fazer uploads
             </p>
           </div>
@@ -125,7 +125,7 @@ export function AdminPage() {
             </Button>
           </form>
 
-          <p className="text-[11px] text-center text-gray-500 font-mono">
+          <p className="text-[11px] text-center text-outline font-mono">
             Chave padrão local: <code>acervo-super-secret-key-2026</code>
           </p>
         </div>
@@ -136,17 +136,17 @@ export function AdminPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fadeIn">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-outline-variant">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight">
               Gestão do Acervo
             </h1>
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
               Autenticado
             </span>
           </div>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-outline mt-1">
             Cadastre, edite e organize registros no Cloudflare D1 e R2
           </p>
         </div>
@@ -166,49 +166,49 @@ export function AdminPage() {
 
       {/* Metrics Banner */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-gray-900/80 border border-white/5 space-y-1">
-          <div className="flex items-center justify-between text-gray-400">
+        <div className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/70 space-y-1">
+          <div className="flex items-center justify-between text-outline">
             <span className="text-[11px] uppercase tracking-wider font-mono">Documentos</span>
-            <FileText className="w-4 h-4 text-indigo-400" />
+            <FileText className="w-4 h-4 text-terracotta" />
           </div>
-          <p className="text-2xl font-bold text-white font-mono">
+          <p className="text-2xl font-bold text-on-surface font-mono">
             {stats?.total_documents ?? documents.length}
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-gray-900/80 border border-white/5 space-y-1">
-          <div className="flex items-center justify-between text-gray-400">
+        <div className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/70 space-y-1">
+          <div className="flex items-center justify-between text-outline">
             <span className="text-[11px] uppercase tracking-wider font-mono">Visualizações</span>
             <Eye className="w-4 h-4 text-cyan-400" />
           </div>
-          <p className="text-2xl font-bold text-white font-mono">
+          <p className="text-2xl font-bold text-on-surface font-mono">
             {stats?.total_views ?? 0}
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-gray-900/80 border border-white/5 space-y-1">
-          <div className="flex items-center justify-between text-gray-400">
+        <div className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/70 space-y-1">
+          <div className="flex items-center justify-between text-outline">
             <span className="text-[11px] uppercase tracking-wider font-mono">Categorias</span>
             <Layers className="w-4 h-4 text-amber-400" />
           </div>
-          <p className="text-2xl font-bold text-white font-mono">
+          <p className="text-2xl font-bold text-on-surface font-mono">
             {stats?.total_categories ?? categories.length}
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-gray-900/80 border border-white/5 space-y-1">
-          <div className="flex items-center justify-between text-gray-400">
+        <div className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/70 space-y-1">
+          <div className="flex items-center justify-between text-outline">
             <span className="text-[11px] uppercase tracking-wider font-mono">Tags Ativas</span>
             <Tag className="w-4 h-4 text-pink-400" />
           </div>
-          <p className="text-2xl font-bold text-white font-mono">
+          <p className="text-2xl font-bold text-on-surface font-mono">
             {stats?.total_tags ?? tags.length}
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+      <div className="flex items-center gap-2 border-b border-outline-variant pb-3">
         <Button
           variant={activeTab === 'list' ? 'primary' : 'ghost'}
           size="sm"

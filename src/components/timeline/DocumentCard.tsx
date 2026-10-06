@@ -1,163 +1,119 @@
-import { useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useState, type RefObject } from 'react'
+import { ArrowUpRight, Eye } from 'lucide-react'
 import type { DocumentItem } from '@/types'
-import { getTypeIconEmoji } from '@/lib/utils'
+import { formatViews, getTypeIconEmoji, getTypeLabel } from '@/lib/utils'
 
 interface DocumentCardProps {
   doc: DocumentItem
-  onSelect: (slug: string) => void
+  trackRef: RefObject<HTMLDivElement>
   onQuickView?: (doc: DocumentItem) => void
 }
 
-export function DocumentCard({ doc, onSelect, onQuickView }: DocumentCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
+export function DocumentCard({ doc, trackRef, onQuickView }: DocumentCardProps) {
+  const cardRef = useRef<HTMLElement>(null)
+  const [revealed, setRevealed] = useState(false)
+  const yearText = doc.doc_date ? doc.doc_date.substring(0, 4) : ''
+  const categoryName = doc.categories?.[0]?.name
 
-  const categoryColor = doc.categories?.[0]?.color || '#6366f1'
-  const yearText = doc.doc_date ? doc.doc_date.substring(0, 4) : '—'
+  useEffect(() => {
+    const card = cardRef.current
+    if (!card) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setRevealed(true)
+        })
+      },
+      { root: trackRef.current, threshold: 0.25 }
+    )
+
+    observer.observe(card)
+    return () => observer.disconnect()
+  }, [trackRef])
 
   return (
-    <div
+    <article
       ref={cardRef}
-      className="relative flex-shrink-0 w-52 md:w-60 cursor-pointer select-none py-6 group"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocus={() => setIsHovered(true)}
-      onBlur={() => setIsHovered(false)}
-      tabIndex={0}
-      role="button"
-      aria-label={`Abrir documento: ${doc.title}`}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') onSelect(doc.slug)
-        if (e.key === ' ') {
-          e.preventDefault()
-          if (onQuickView) onQuickView(doc)
-        }
-      }}
+      data-year={yearText}
+      className="timeline-card group flex-shrink-0 w-[340px] sm:w-[410px] flex flex-col bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden"
     >
-      {/* Timeline connector dot and vertical stem */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
-        <motion.div
-          className="w-4 h-4 rounded-full border-2 border-white shadow-md cursor-pointer"
-          style={{ backgroundColor: categoryColor }}
-          animate={{ scale: isHovered ? 1.5 : 1 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-          onClick={(e) => {
-            e.stopPropagation()
-            onSelect(doc.slug)
-          }}
+      <div className="relative w-full aspect-[4/5] overflow-hidden bg-primary-container">
+        <div
+          className="absolute inset-y-0 left-0 w-1/2 bg-primary-container z-20 pointer-events-none transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{ transform: revealed ? 'translateX(-100%)' : 'translateX(0)' }}
         />
-        <div className="w-0.5 h-6 bg-gradient-to-b from-white/60 to-white/10" />
+        <div
+          className="absolute inset-y-0 right-0 w-1/2 bg-primary-container z-20 pointer-events-none transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{ transform: revealed ? 'translateX(100%)' : 'translateX(0)' }}
+        />
+        {doc.thumbnail_url ? (
+          <img
+            src={doc.thumbnail_url}
+            alt={doc.title}
+            draggable={false}
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-on-primary gap-2">
+            <span className="text-5xl">{getTypeIconEmoji(doc.doc_type)}</span>
+            <span className="text-label-sm uppercase tracking-widest text-surface-variant">
+              {getTypeLabel(doc.doc_type)}
+            </span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent flex flex-col justify-end p-6 z-10 pointer-events-none">
+          <h2 className="font-display text-headline-sm text-on-primary font-normal leading-snug">
+            {doc.title}
+          </h2>
+          {doc.subtitle && (
+            <p className="text-body-sm text-surface-variant font-light mt-1 line-clamp-2">
+              {doc.subtitle}
+            </p>
+          )}
+        </div>
+        {yearText && (
+          <div className="absolute top-4 left-4 z-10 pointer-events-none bg-surface/90 backdrop-blur-md px-3 py-1 rounded shadow-sm text-primary font-display text-[20px] font-medium leading-none">
+            {yearText}
+          </div>
+        )}
       </div>
 
-      {/* Main Document Card */}
-      <motion.div
-        className="mt-6 bg-gray-900/80 backdrop-blur-xl border border-white/15 rounded-2xl overflow-hidden shadow-2xl transition-colors hover:border-white/30"
-        animate={{
-          y: isHovered ? -8 : 0,
-          boxShadow: isHovered
-            ? `0 20px 50px ${categoryColor}33, 0 4px 20px rgba(0,0,0,0.8)`
-            : '0 4px 20px rgba(0,0,0,0.6)',
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        onClick={() => onSelect(doc.slug)}
-      >
-        {/* Thumbnail area */}
-        <div className="relative h-32 md:h-36 bg-gray-800/50 overflow-hidden">
-          {doc.thumbnail_url ? (
-            <motion.img
-              src={doc.thumbnail_url}
-              alt={doc.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              animate={{ scale: isHovered ? 1.08 : 1 }}
-              transition={{ duration: 0.4 }}
-              onError={(e) => {
-                // Fallback on broken image
-                (e.target as HTMLElement).style.display = 'none'
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-4xl opacity-60 bg-gradient-to-b from-white/5 to-white/0">
-              <span>{getTypeIconEmoji(doc.doc_type)}</span>
-              <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase tracking-wider">
-                {doc.doc_type.replace('_', ' ')}
-              </span>
-            </div>
-          )}
-
-          {/* Featured Ribbon */}
-          {doc.is_featured && (
-            <div className="absolute top-2 right-2 text-[10px] bg-amber-400 text-gray-950 px-2 py-0.5 rounded-full font-bold shadow-md flex items-center gap-1">
-              ★ Destaque
-            </div>
-          )}
-
-          {/* Doc Type Badge */}
-          <div className="absolute bottom-2 left-2 text-[10px] bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-white/90 border border-white/10 flex items-center gap-1">
-            <span>{getTypeIconEmoji(doc.doc_type)}</span>
-            <span className="capitalize">{doc.doc_type.replace('_', ' ')}</span>
-          </div>
-        </div>
-
-        {/* Content Details */}
-        <div className="p-3.5 space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-indigo-400 font-mono font-semibold">
-            <span>{yearText}</span>
+      <div className="p-6 flex flex-col justify-between flex-grow bg-surface-container-lowest">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-outline">
+            <span className="text-label-sm uppercase tracking-wider text-terracotta font-semibold">
+              {categoryName || getTypeLabel(doc.doc_type)}
+            </span>
             {doc.view_count > 0 && (
-              <span className="text-gray-400 text-[11px] font-normal">{doc.view_count} views</span>
+              <span className="text-label-sm flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5" />
+                {formatViews(doc.view_count)}
+              </span>
             )}
           </div>
-
-          <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2 group-hover:text-indigo-200 transition-colors">
-            {doc.title}
-          </h3>
-
-          {doc.author && (
-            <p className="text-xs text-gray-400 line-clamp-1">{doc.author}</p>
-          )}
-
-          {/* Category Badges */}
-          {doc.categories && doc.categories.length > 0 && (
-            <div className="flex flex-wrap gap-1 pt-1">
-              {doc.categories.slice(0, 2).map((cat) => (
-                <span
-                  key={cat.slug}
-                  className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                  style={{
-                    backgroundColor: `${cat.color}25`,
-                    color: cat.color,
-                    border: `1px solid ${cat.color}50`,
-                  }}
-                >
-                  {cat.name}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Hover Floating Tooltip */}
-      <AnimatePresence>
-        {isHovered && doc.description && (
-          <motion.div
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 w-64 bg-gray-900/95 backdrop-blur-xl border border-white/20 rounded-xl p-3.5 shadow-2xl pointer-events-none"
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-          >
-            <p className="text-xs text-gray-200 leading-relaxed line-clamp-4">
+          {doc.description && (
+            <p className="text-body-sm text-on-surface-variant leading-relaxed line-clamp-3">
               {doc.description}
             </p>
-            <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-indigo-300 font-medium">
-              <span>Clique para ver detalhes</span>
-              <span>→</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </div>
+        <div className="pt-6 mt-4 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-label-sm text-outline uppercase tracking-wider">Suporte</span>
+            <span className="text-body-sm text-on-surface font-medium">{getTypeLabel(doc.doc_type)}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onQuickView?.(doc)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-label-md font-semibold transition-colors"
+          >
+            <span>Examinar</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </article>
   )
 }

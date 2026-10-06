@@ -1,58 +1,115 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { History, Layers, ShieldCheck } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Search, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const navItems = [
+  { label: 'Linha do Tempo', path: '/' },
+  { label: 'Explorar Acervo', path: '/timeline' },
+]
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 export function Header() {
   const location = useLocation()
+  const navigate = useNavigate()
 
-  const navItems = [
-    { label: 'Linha do Tempo', path: '/', icon: History },
-    { label: 'Explorar Acervo', path: '/timeline', icon: Layers },
-    { label: 'Administração', path: '/admin', icon: ShieldCheck },
-  ]
+  const goToHomeSection = (id: string) => {
+    if (location.pathname === '/') {
+      scrollToSection(id)
+      return
+    }
+    navigate({ pathname: '/', hash: id })
+  }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-gray-950/70 backdrop-blur-xl border-b border-white/10 transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform">
-            <History className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-tight text-white group-hover:text-indigo-300 transition-colors">
-              Acervo Timeline
-            </span>
-            <span className="hidden sm:inline-block ml-2 text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              Cloudflare Free Tier
-            </span>
-          </div>
-        </Link>
+    <header className="fixed top-0 left-0 w-full z-50 bg-surface/90 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
+      <div className="h-20 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop flex items-center justify-between gap-4">
+        <div className="flex items-center gap-6 min-w-0">
+          <Link to="/" className="flex items-center gap-3.5 group text-left shrink-0">
+            <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary font-display text-[22px] leading-none transition-transform group-hover:scale-105">
+              A
+            </div>
+            <div className="flex flex-col">
+              <span className="font-display text-[22px] leading-none tracking-tight text-on-surface">
+                Acervo Timeline
+              </span>
+              <span className="font-medium text-label-sm uppercase tracking-wider text-outline mt-1 hidden sm:block">
+                Preservação da Memória & História
+              </span>
+            </div>
+          </Link>
 
-        {/* Navigation */}
-        <nav className="flex items-center gap-1 sm:gap-2">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.path
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-white/10 text-white shadow-sm'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                )}
-              >
-                <Icon className={cn('w-4 h-4', isActive ? 'text-indigo-400' : 'text-gray-400')} />
-                <span className="hidden md:inline">{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
+          <nav className="hidden lg:flex items-center gap-8 pl-6">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'py-2 text-body-md transition-colors',
+                    isActive
+                      ? 'text-on-surface border-b-2 border-primary pb-1 font-semibold'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  )}
+                >
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            title="Buscar no Acervo"
+            onClick={() => goToHomeSection('pesquisa')}
+            className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => goToHomeSection('filtros')}
+            className="flex items-center gap-1.5 px-3 h-10 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors text-body-sm"
+          >
+            <SlidersHorizontal className="w-[18px] h-[18px]" />
+            <span className="hidden xl:inline">Filtros</span>
+          </button>
+          <div className="h-5 w-px bg-outline-variant mx-1 hidden sm:block" />
+          <Link
+            to="/admin"
+            className="px-3.5 h-9 hidden lg:flex items-center text-label-md font-semibold uppercase tracking-wider text-on-surface border border-outline-variant hover:border-primary hover:bg-surface-container-lowest rounded transition-colors"
+          >
+            Administração
+          </Link>
+        </div>
       </div>
+
+      <nav className="lg:hidden flex items-center gap-5 px-4 sm:px-8 pb-3 overflow-x-auto no-scrollbar">
+        {[...navItems, { label: 'Administração', path: '/admin' }].map((item) => {
+          const isActive = location.pathname === item.path
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                'whitespace-nowrap text-body-sm py-1',
+                isActive
+                  ? 'text-on-surface border-b-2 border-primary font-semibold'
+                  : 'text-on-surface-variant'
+              )}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
     </header>
   )
 }

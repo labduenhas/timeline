@@ -31,6 +31,15 @@ export function formatYearOnly(dateString: string): string {
   return dateString.substring(0, 4)
 }
 
+export function formatViews(count: number): string {
+  if (count >= 1000) {
+    const value = count / 1000
+    const digits = value >= 10 ? 0 : 1
+    return `${value.toFixed(digits).replace('.', ',')}k`
+  }
+  return count.toLocaleString('pt-BR')
+}
+
 export function getTypeLabel(type: DocType): string {
   const map: Record<DocType, string> = {
     image: 'Fotografia / Imagem',

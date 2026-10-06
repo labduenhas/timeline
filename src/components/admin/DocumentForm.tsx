@@ -104,13 +104,13 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-900 border border-white/10 rounded-2xl p-6 sm:p-8 space-y-6">
-      <div className="flex items-center justify-between pb-4 border-b border-white/10">
+    <form onSubmit={handleSubmit} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 sm:p-8 space-y-6">
+      <div className="flex items-center justify-between pb-4 border-b border-outline-variant">
         <div>
-          <h3 className="text-lg font-bold text-white">
+          <h3 className="text-lg font-bold text-on-surface">
             {isEditing ? 'Editar Documento Histórico' : 'Novo Documento para o Acervo'}
           </h3>
-          <p className="text-xs text-gray-400">Preencha os metadados para catalogação e visualização na linha do tempo</p>
+          <p className="text-xs text-outline">Preencha os metadados para catalogação e visualização na linha do tempo</p>
         </div>
       </div>
 
@@ -118,8 +118,8 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
         <div
           className={`p-3 rounded-xl flex items-center gap-2 text-xs font-medium ${
             statusMsg.type === 'success'
-              ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/40'
-              : 'bg-rose-950/60 text-rose-300 border border-rose-500/40'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border border-rose-200'
           }`}
         >
           {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -153,11 +153,11 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
           required
         />
         <div>
-          <label className="block text-xs font-medium text-gray-300 mb-1.5">Precisão da Data</label>
+          <label className="block text-xs font-medium text-on-surface-variant mb-1.5">Precisão da Data</label>
           <select
             value={datePrecision}
             onChange={(e) => setDatePrecision(e.target.value as DatePrecision)}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             <option value="day">Dia Exato (Dia/Mês/Ano)</option>
             <option value="month">Mês e Ano</option>
@@ -165,11 +165,11 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-300 mb-1.5">Tipo de Mídia / Formato</label>
+          <label className="block text-xs font-medium text-on-surface-variant mb-1.5">Tipo de Mídia / Formato</label>
           <select
             value={docType}
             onChange={(e) => setDocType(e.target.value as DocType)}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             <option value="document">Documento Oficial</option>
             <option value="image">Fotografia / Imagem</option>
@@ -215,7 +215,7 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
 
       {/* Categories selection */}
       <div>
-        <label className="block text-xs font-medium text-gray-300 mb-2">Categorias Temáticas</label>
+        <label className="block text-xs font-medium text-on-surface-variant mb-2">Categorias Temáticas</label>
         <div className="flex flex-wrap gap-2">
           {availableCategories.map((c) => {
             const isSelected = selectedCategories.includes(c.id) || selectedCategories.includes(c.slug)
@@ -257,31 +257,31 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
 
       {/* Description */}
       <div>
-        <label className="block text-xs font-medium text-gray-300 mb-1.5">Resumo / Descrição Rápida</label>
+        <label className="block text-xs font-medium text-on-surface-variant mb-1.5">Resumo / Descrição Rápida</label>
         <textarea
           rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Breve resumo exibido no hover e no card da timeline..."
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-3 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/15"
         />
       </div>
 
       {/* Rich Body Content */}
       <div>
-        <label className="block text-xs font-medium text-gray-300 mb-1.5">Conteúdo Completo (HTML / Artigo)</label>
+        <label className="block text-xs font-medium text-on-surface-variant mb-1.5">Conteúdo Completo (HTML / Artigo)</label>
         <textarea
           rows={6}
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="<p>Texto detalhado com transcrição, análise histórica e contextualização...</p>"
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-gray-100 font-mono placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-3 text-sm text-on-surface font-mono placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/15"
         />
       </div>
 
       {/* Visibility Toggles */}
       <div className="flex items-center gap-6 pt-2">
-        <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-300">
+        <label className="flex items-center gap-2 cursor-pointer text-xs text-on-surface-variant">
           <input
             type="checkbox"
             checked={isPublic === 1}
@@ -291,19 +291,19 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
           <span>Publicado (visível no acervo público)</span>
         </label>
 
-        <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-300">
+        <label className="flex items-center gap-2 cursor-pointer text-xs text-on-surface-variant">
           <input
             type="checkbox"
             checked={isFeatured === 1}
             onChange={(e) => setIsFeatured(e.target.checked ? 1 : 0)}
             className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
           />
-          <span className="text-amber-400 font-medium">Item em Destaque ★</span>
+          <span className="text-terracotta font-medium">Item em Destaque ★</span>
         </label>
       </div>
 
       {/* Form Buttons */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancelar
         </Button>

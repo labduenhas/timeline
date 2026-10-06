@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Calendar, Filter, Sparkles, FolderArchive } from 'lucide-react'
+import { Eye, FolderArchive, Search } from 'lucide-react'
 import { api } from '@/lib/api'
-import { formatDate, getTypeLabel, getTypeIconEmoji } from '@/lib/utils'
+import { cn, formatViews, formatYearOnly, getTypeIconEmoji, getTypeLabel } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
-import type { DocumentItem, Category } from '@/types'
+import type { Category, DocumentItem } from '@/types'
 
 export function TimelinePage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([])
@@ -14,20 +14,18 @@ export function TimelinePage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
-
   const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [selectedType, setSelectedType] = useState<string>('')
+  const [query, setQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
 
-  const loadDocs = async () => {
+  const loadDocs = async (nextPage = page, nextSearch = search, nextCategory = selectedCategory) => {
     setLoading(true)
     try {
       const res = await api.getDocuments({
-        page,
+        page: nextPage,
         limit: 12,
-        search: search || undefined,
-        category: selectedCategory || undefined,
-        type: selectedType || undefined,
+        search: nextSearch || undefined,
+        category: nextCategory || undefined,
       })
       setDocuments(res.items || [])
       setTotal(res.total || 0)
@@ -47,201 +45,160 @@ export function TimelinePage() {
 
   useEffect(() => {
     loadDocs()
-  }, [page, selectedCategory, selectedType])
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setPage(1)
-    loadDocs()
-  }
+  }, [page, selectedCategory])
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fadeIn">
-      {/* Page Title & Intro */}
-      <div className="space-y-2 text-center max-w-2xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Explorar Acervo Histórico
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-10 space-y-8 animate-fadeIn">
+      <div className="max-w-3xl space-y-3">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-terracotta text-white text-label-sm uppercase tracking-widest">
+          Catálogo
+        </span>
+        <h1 className="font-display text-4xl sm:text-display-xl text-primary font-normal tracking-tight leading-[1.08]">
+          Explorar acervo histórico
         </h1>
-        <p className="text-sm text-gray-400">
-          Pesquise e consulte todos os registros, documentos oficiais, imagens e mídias raras digitalizadas.
+        <p className="text-body-lg text-on-surface-variant">
+          Pesquise registros, documentos oficiais, imagens e mídias digitalizadas.
         </p>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-gray-900/80 border border-white/10 rounded-2xl p-4 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4">
-        <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar por palavras-chave, eventos ou personalidades..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-gray-950 border border-gray-700 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <Button type="submit" variant="primary" className="px-6">
-            Buscar
-          </Button>
-        </form>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          setPage(1)
+          setSearch(query)
+          loadDocs(1, query, selectedCategory)
+        }}
+        className="relative flex items-center max-w-3xl bg-surface-container-lowest rounded-full shadow-sm overflow-hidden border border-outline-variant/60"
+      >
+        <input
+          type="text"
+          placeholder="Buscar por palavras-chave, eventos ou personalidades..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full py-4 pl-6 pr-16 bg-transparent text-on-surface placeholder:text-outline text-body-md focus:outline-none"
+        />
+        <button
+          type="submit"
+          aria-label="Buscar"
+          className="absolute right-2 w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-terracotta transition-colors"
+        >
+          <Search className="w-5 h-5" />
+        </button>
+      </form>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/5 text-xs">
-          {/* Category Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400 font-medium">Categoria:</span>
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value)
-                setPage(1)
-              }}
-              className="bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="">Todas as Categorias</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.slug}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Type Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400 font-medium">Tipo de Arquivo:</span>
-            <select
-              value={selectedType}
-              onChange={(e) => {
-                setSelectedType(e.target.value)
-                setPage(1)
-              }}
-              className="bg-gray-950 border border-gray-700 rounded-lg px-2.5 py-1 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="">Todos os Tipos</option>
-              <option value="document">Documento Oficial</option>
-              <option value="image">Fotografia</option>
-              <option value="pdf">PDF</option>
-              <option value="txt">Texto / Manuscrito</option>
-              <option value="video_url">Vídeo</option>
-              <option value="audio">Áudio</option>
-            </select>
-          </div>
-
-          <span className="text-gray-400 font-mono">
-            {total} {total === 1 ? 'resultado' : 'resultados'}
-          </span>
-        </div>
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedCategory('')
+            setPage(1)
+          }}
+          className={cn(
+            'px-4 py-2 rounded-full text-label-md font-semibold whitespace-nowrap',
+            !selectedCategory ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface hover:bg-surface-container-highest'
+          )}
+        >
+          Todas as Categorias
+        </button>
+        {categories.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => {
+              setSelectedCategory(item.slug === selectedCategory ? '' : item.slug)
+              setPage(1)
+            }}
+            className={cn(
+              'px-4 py-2 rounded-full text-label-md font-semibold whitespace-nowrap',
+              selectedCategory === item.slug
+                ? 'bg-primary text-on-primary'
+                : 'bg-surface-container text-on-surface hover:bg-surface-container-highest'
+            )}
+          >
+            {item.name}
+          </button>
+        ))}
+        <span className="ml-auto text-label-sm uppercase tracking-widest text-outline whitespace-nowrap pl-4">
+          {total} {total === 1 ? 'resultado' : 'resultados'}
+        </span>
       </div>
 
-      {/* Grid of Documents */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="bg-gray-900/60 rounded-2xl p-4 border border-white/5 space-y-3">
-              <Skeleton className="h-40 w-full rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="aspect-[4/5] w-full rounded-xl" />
               <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-5 w-2/3" />
             </div>
           ))}
         </div>
       ) : documents.length === 0 ? (
-        <div className="p-12 text-center bg-gray-900/40 border border-white/5 rounded-3xl max-w-lg mx-auto space-y-4">
-          <FolderArchive className="w-12 h-12 text-gray-500 mx-auto" />
-          <h3 className="text-lg font-bold text-white">Nenhum documento encontrado</h3>
-          <p className="text-xs text-gray-400">Tente buscar outros termos ou limpar os filtros de categoria.</p>
+        <div className="p-12 text-center bg-surface-container-lowest border border-outline-variant rounded-3xl max-w-lg mx-auto space-y-4">
+          <FolderArchive className="w-12 h-12 text-outline mx-auto" />
+          <h3 className="text-lg font-display text-primary">Nenhum documento encontrado</h3>
+          <p className="text-sm text-on-surface-variant">Tente outros termos ou limpe o filtro de categoria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {documents.map((doc) => (
             <Link
               key={doc.id}
               to={`/doc/${doc.slug}`}
-              className="group bg-gray-900/80 border border-white/10 hover:border-indigo-500/50 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between"
+              className="group bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col"
             >
-              <div>
-                <div className="relative h-44 bg-gray-800 overflow-hidden">
-                  {doc.thumbnail_url ? (
-                    <img
-                      src={doc.thumbnail_url}
-                      alt={doc.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-4xl opacity-50 bg-gradient-to-b from-white/5 to-white/0">
-                      <span>{getTypeIconEmoji(doc.doc_type)}</span>
-                      <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase">
-                        {doc.doc_type}
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] text-white border border-white/10">
-                    {getTypeLabel(doc.doc_type)}
+              <div className="relative aspect-[4/5] bg-primary-container overflow-hidden">
+                {doc.thumbnail_url ? (
+                  <img
+                    src={doc.thumbnail_url}
+                    alt={doc.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-on-primary gap-2">
+                    <span className="text-4xl">{getTypeIconEmoji(doc.doc_type)}</span>
+                    <span className="text-label-sm uppercase tracking-widest">{getTypeLabel(doc.doc_type)}</span>
                   </div>
-                </div>
-
-                <div className="p-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-indigo-400 font-mono">
-                    <span>{formatDate(doc.doc_date, doc.date_precision)}</span>
-                    {doc.view_count > 0 && (
-                      <span className="text-gray-500 text-[11px]">{doc.view_count} views</span>
-                    )}
-                  </div>
-
-                  <h3 className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-2 leading-snug">
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/10 to-transparent flex flex-col justify-end p-6 pointer-events-none">
+                  <h2 className="font-display text-headline-sm text-on-primary font-normal leading-snug">
                     {doc.title}
-                  </h3>
-
-                  {doc.description && (
-                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                      {doc.description}
-                    </p>
-                  )}
+                  </h2>
+                </div>
+                <div className="absolute top-4 left-4 bg-surface/90 backdrop-blur-md px-3 py-1 rounded text-primary font-display text-[20px] leading-none">
+                  {formatYearOnly(doc.doc_date) || '—'}
                 </div>
               </div>
-
-              {doc.categories && doc.categories.length > 0 && (
-                <div className="px-4 pb-4 pt-1 flex flex-wrap gap-1">
-                  {doc.categories.slice(0, 2).map((c) => (
-                    <span
-                      key={c.slug}
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{
-                        backgroundColor: `${c.color}20`,
-                        color: c.color,
-                        border: `1px solid ${c.color}40`,
-                      }}
-                    >
-                      {c.name}
+              <div className="p-6 space-y-3">
+                <div className="flex items-center justify-between text-outline">
+                  <span className="text-label-sm uppercase tracking-wider text-terracotta font-semibold">
+                    {doc.categories?.[0]?.name || getTypeLabel(doc.doc_type)}
+                  </span>
+                  {doc.view_count > 0 && (
+                    <span className="text-label-sm flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5" />
+                      {formatViews(doc.view_count)}
                     </span>
-                  ))}
+                  )}
                 </div>
-              )}
+                {doc.description && (
+                  <p className="text-body-sm text-on-surface-variant line-clamp-3">{doc.description}</p>
+                )}
+              </div>
             </Link>
           ))}
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-6">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-          >
+        <div className="flex items-center justify-center gap-3 pt-4">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
             Anterior
           </Button>
-          <span className="text-xs text-gray-400 font-mono px-4">
+          <span className="text-label-sm text-outline px-2">
             Página {page} de {totalPages}
           </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
-          >
+          <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
             Próxima
           </Button>
         </div>

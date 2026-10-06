@@ -10,9 +10,9 @@ import { AdminPage } from '@/pages/AdminPage'
 export function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-gray-950 text-gray-100 selection:bg-indigo-500/30 selection:text-indigo-200">
+      <div className="min-h-screen flex flex-col bg-surface text-on-surface selection:bg-secondary-fixed selection:text-on-secondary-fixed">
         <Header />
-        <main className="flex-1 pt-16">
+        <main className="flex-1 pt-[7.25rem] lg:pt-20">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/timeline" element={<TimelinePage />} />

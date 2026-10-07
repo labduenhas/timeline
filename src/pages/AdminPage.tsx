@@ -40,8 +40,12 @@ export function AdminPage() {
     setLoginError(null)
     try {
       const session = await api.verifySecret(secret, website)
-      localStorage.setItem('acervo_admin_token', session.token)
-      setToken(session.token)
+      const sessionToken = session.token || (session.valid ? secret : '')
+      if (!sessionToken) {
+        throw Object.assign(new Error('Chave de administração incorreta.'), { status: 401 })
+      }
+      localStorage.setItem('acervo_admin_token', sessionToken)
+      setToken(sessionToken)
       setIsAuthenticated(true)
       setSecretInput('')
       loadAdminData()
@@ -141,7 +145,7 @@ export function AdminPage() {
             </div>
             <Input
               type="password"
-              placeholder="Frase de acesso"
+              aria-label="Frase de acesso"
               value={secretInput}
               onChange={(e) => setSecretInput(e.target.value)}
               error={loginError || undefined}

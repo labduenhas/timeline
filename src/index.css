@@ -196,6 +196,29 @@ body {
   pointer-events: none;
 }
 
+.swipe-nudge-left,
+.swipe-nudge-right {
+  opacity: 0.45;
+}
+
+.swipe-nudge-left {
+  animation: swipe-nudge-left 1.8s ease-in-out infinite;
+}
+
+.swipe-nudge-right {
+  animation: swipe-nudge-right 1.8s ease-in-out infinite;
+}
+
+@keyframes swipe-nudge-left {
+  0%, 100% { transform: translateX(0); opacity: 0.35; }
+  50% { transform: translateX(-5px); opacity: 1; }
+}
+
+@keyframes swipe-nudge-right {
+  0%, 100% { transform: translateX(0); opacity: 0.35; }
+  50% { transform: translateX(5px); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

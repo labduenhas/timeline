@@ -13,6 +13,9 @@ interface DocumentModalProps {
 
 export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModalProps) {
   const gesture = useRef<{ x: number; y: number } | null>(null)
+  const stopTracking = useRef<(() => void) | null>(null)
+
+  useEffect(() => () => stopTracking.current?.(), [])
 
   useEffect(() => {
     if (!doc) return
@@ -62,21 +65,34 @@ export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModa
     await navigator.clipboard.writeText(url)
   }
 
+  const finishGesture = (x: number, y: number) => {
+    if (!gesture.current) return
+    const dx = x - gesture.current.x
+    const dy = y - gesture.current.y
+    gesture.current = null
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return
+    if (dx < 0) onNext?.()
+    else onPrevious?.()
+  }
+
   const onPointerDown = (event: React.PointerEvent) => {
     if (event.pointerType === 'mouse') return
     const target = event.target
     if (target instanceof Element && target.closest('a, button')) return
+    stopTracking.current?.()
     gesture.current = { x: event.clientX, y: event.clientY }
-  }
-
-  const onPointerUp = (event: React.PointerEvent) => {
-    if (!gesture.current) return
-    const dx = event.clientX - gesture.current.x
-    const dy = event.clientY - gesture.current.y
-    gesture.current = null
-    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy)) return
-    if (dx < 0) onNext?.()
-    else onPrevious?.()
+    const end = (pointerEvent: PointerEvent) => {
+      stop()
+      finishGesture(pointerEvent.clientX, pointerEvent.clientY)
+    }
+    const stop = () => {
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', end)
+      stopTracking.current = null
+    }
+    stopTracking.current = stop
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
   }
 
   return (
@@ -113,10 +129,6 @@ export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModa
             className="flex h-full w-full touch-pan-y flex-col overflow-hidden rounded-none bg-surface-container-lowest md:h-auto md:max-h-[92vh] md:rounded-2xl md:shadow-2xl lg:min-h-[32rem] lg:flex-row"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={onPointerDown}
-            onPointerUp={onPointerUp}
-            onPointerCancel={() => {
-              gesture.current = null
-            }}
           >
             <div className="relative h-52 shrink-0 bg-primary-container sm:h-64 lg:h-auto lg:w-[46%] lg:self-stretch">
               {doc.thumbnail_url ? (
@@ -124,6 +136,15 @@ export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModa
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-5xl text-on-primary">
                   {getTypeIconEmoji(doc.doc_type)}
+                </div>
+              )}
+              {(onPrevious || onNext) && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center md:hidden">
+                  <div className="flex items-center gap-2 bg-surface/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface backdrop-blur-sm">
+                    <ChevronLeft className={`h-3.5 w-3.5 ${onPrevious ? 'swipe-nudge-left' : 'opacity-30'}`} />
+                    Deslize
+                    <ChevronRight className={`h-3.5 w-3.5 ${onNext ? 'swipe-nudge-right' : 'opacity-30'}`} />
+                  </div>
                 </div>
               )}
               <button
@@ -135,7 +156,7 @@ export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModa
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-6 lg:w-[54%] lg:p-8">
+            <div className="flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto overscroll-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-6 lg:w-[54%] lg:p-8">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   {year && (

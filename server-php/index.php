@@ -700,6 +700,37 @@ if ($path === '/docs' && $method === 'GET') {
     ]);
 }
 
+function ogPlainText($value) {
+    $text = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $value)));
+    if ($text === '') return '';
+    if (function_exists('mb_strlen') && mb_strlen($text) > 220) {
+        return rtrim(mb_substr($text, 0, 217)) . '...';
+    }
+    if (strlen($text) > 220) {
+        return rtrim(substr($text, 0, 217)) . '...';
+    }
+    return $text;
+}
+
+// Prévia para WhatsApp e outras redes: GET /og/{slug}
+// Não conta visualização. O HTML público da ficha usa estes dados.
+if (preg_match('#^/og/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GET') {
+    $db = getDB();
+    $stmt = $db->prepare('SELECT title, subtitle, description, thumbnail_key, cover_image_key, is_public FROM documents WHERE slug = ? AND deleted_at IS NULL');
+    $stmt->execute([$matches[1]]);
+    $doc = $stmt->fetch();
+    if (!$doc || !(int) $doc['is_public']) {
+        jsonResponse(['error' => 'Documento não encontrado'], 404);
+    }
+    $description = ogPlainText($doc['description']);
+    if ($description === '') $description = ogPlainText($doc['subtitle']);
+    jsonResponse([
+        'title' => $doc['title'],
+        'description' => $description,
+        'image' => resolveMediaUrl($doc['cover_image_key'] ?: $doc['thumbnail_key']),
+    ], 200, ['Cache-Control' => 'public, max-age=300']);
+}
+
 // 4. Detalhes de Documento por Slug: GET /docs/{slug}
 if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GET') {
     $db = getDB();

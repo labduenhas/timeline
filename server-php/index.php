@@ -160,12 +160,11 @@ function timelineFilters(PDO $db, $category, $tags, $from, $to, $search) {
                 $where .= ' AND CAST(d.doc_year AS CHAR) LIKE ?';
                 $params[] = $term . '%';
             }
-        } elseif (hasFulltextSearch($db) && mb_strlen($term) >= 3) {
-            $where .= ' AND MATCH(d.title, d.description, d.author) AGAINST (? IN BOOLEAN MODE)';
-            $params[] = $term;
         } else {
             $like = likeContains($term);
-            $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\')";
+            $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.subtitle LIKE ? ESCAPE '\\\\' OR d.description LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\')";
+            $params[] = $like;
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
         }
@@ -265,6 +264,28 @@ function fetchTimelineCards(PDO $db, $where, $params, $limit = null, $offset = n
         $items[] = mapTimelineCard($row);
     }
     return $items;
+}
+
+function saveDocumentMedia(PDO $db, $docId, $items) {
+    $db->prepare('DELETE FROM document_media WHERE document_id = ?')->execute([$docId]);
+    if (!is_array($items)) return;
+    $insert = $db->prepare('INSERT INTO document_media (id, document_id, file_key, media_type, caption, sort_order) VALUES (?, ?, ?, ?, ?, ?)');
+    $order = 0;
+    foreach ($items as $item) {
+        if (!is_array($item)) continue;
+        $key = trim((string) ($item['file_key'] ?? $item['url'] ?? ''));
+        if ($key === '') continue;
+        $type = preg_replace('/[^a-z_]/', '', (string) ($item['media_type'] ?? 'image')) ?: 'image';
+        $insert->execute([
+            'media_' . bin2hex(random_bytes(6)),
+            $docId,
+            $key,
+            $type,
+            isset($item['caption']) ? (string) $item['caption'] : null,
+            $order,
+        ]);
+        $order++;
+    }
 }
 
 function likeContains($term) {
@@ -524,12 +545,11 @@ if ($path === '/docs' && $method === 'GET') {
                 $where .= " AND CAST(d.doc_year AS CHAR) LIKE ?";
                 $params[] = $termRaw . '%';
             }
-        } elseif (hasFulltextSearch($db) && mb_strlen($termRaw) >= 3) {
-            $where .= " AND MATCH(d.title, d.description, d.author) AGAINST (? IN BOOLEAN MODE)";
-            $params[] = $termRaw;
         } else {
-            $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\')";
             $term = likeContains($termRaw);
+            $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.subtitle LIKE ? ESCAPE '\\\\' OR d.description LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\')";
+            $params[] = $term;
+            $params[] = $term;
             $params[] = $term;
             $params[] = $term;
         }
@@ -555,7 +575,7 @@ if ($path === '/docs' && $method === 'GET') {
     $sql = "
       SELECT 
         d.id, d.slug, d.title, d.subtitle, d.description, d.doc_date, d.date_precision,
-        d.doc_type, d.thumbnail_key, d.cover_image_key, d.author, d.publisher, d.location,
+        d.doc_type, d.source_url, d.file_key, d.thumbnail_key, d.cover_image_key, d.author, d.publisher, d.location,
         d.is_featured, d.is_public, d.view_count, d.created_at,
         GROUP_CONCAT(DISTINCT c.name) as category_names,
         GROUP_CONCAT(DISTINCT c.slug) as category_slugs,
@@ -599,6 +619,9 @@ if ($path === '/docs' && $method === 'GET') {
             'doc_date' => $row['doc_date'],
             'date_precision' => $row['date_precision'],
             'doc_type' => $row['doc_type'],
+            'source_url' => $row['source_url'],
+            'file_key' => $row['file_key'],
+            'thumbnail_key' => $row['thumbnail_key'],
             'author' => $row['author'],
             'publisher' => $row['publisher'],
             'location' => $row['location'],
@@ -668,6 +691,7 @@ if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GE
             'id' => $m['id'],
             'media_type' => $m['media_type'],
             'caption' => $m['caption'],
+            'file_key' => $m['file_key'],
             'url' => resolveMediaUrl($m['file_key']),
         ];
     }
@@ -719,6 +743,8 @@ if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GE
         'date_precision' => $doc['date_precision'],
         'doc_type' => $doc['doc_type'],
         'source_url' => $doc['source_url'],
+        'file_key' => $doc['file_key'],
+        'thumbnail_key' => $doc['thumbnail_key'],
         'author' => $doc['author'],
         'publisher' => $doc['publisher'],
         'location' => $doc['location'],
@@ -788,6 +814,10 @@ if ($path === '/docs' && $method === 'POST') {
         }
     }
 
+    if (array_key_exists('media', $body)) {
+        saveDocumentMedia($db, $id, $body['media']);
+    }
+
     jsonResponse(['ok' => true, 'id' => $id, 'slug' => $slug], 201);
 }
 
@@ -849,6 +879,10 @@ if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'PU
         foreach ($body['categories'] as $catId) {
             $catInsert->execute([$id, $catId]);
         }
+    }
+
+    if (array_key_exists('media', $body)) {
+        saveDocumentMedia($db, $id, $body['media']);
     }
 
     jsonResponse(['ok' => true, 'message' => 'Documento atualizado com sucesso']);

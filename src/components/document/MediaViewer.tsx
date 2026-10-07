@@ -28,24 +28,28 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
     return null
   }
 
-  const embedUrl = getEmbedUrl(sourceUrl)
+  const videoSources = [sourceUrl, ...media.filter((item) => item.media_type === 'video').map((item) => item.url)]
+    .filter((url, index, all): url is string => Boolean(url) && all.indexOf(url) === index)
 
   return (
     <div className="space-y-6">
-      {/* Video Embed Player */}
-      {(docType === 'video_url' || embedUrl) && embedUrl && (
-        <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-outline-variant shadow-2xl">
-          <iframe
-            src={embedUrl}
-            title={title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      )}
+      {videoSources.map((url) => {
+        const embedUrl = getEmbedUrl(url)
+        if (!embedUrl) return null
+        return (
+          <div key={url} className="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-outline-variant shadow-2xl">
+            <iframe
+              src={embedUrl}
+              title={title}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )
+      })}
 
-      {/* Direct Video File (R2) */}
+      {/* Direct video file */}
       {docType === 'video_file' && fileUrl && (
         <div className="w-full rounded-2xl overflow-hidden bg-black border border-outline-variant shadow-2xl">
           <video
@@ -88,13 +92,13 @@ export function MediaViewer({ media = [], sourceUrl, fileUrl, docType, title }: 
       )}
 
       {/* Attached Media Gallery */}
-      {media.length > 0 && (
+      {media.some((item) => item.media_type !== 'video') && (
         <div className="space-y-3">
           <h4 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider font-mono">
-            Mídias e Anexos Relacionados ({media.length})
+            Mídias e Anexos Relacionados ({media.filter((item) => item.media_type !== 'video').length})
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {media.map((item) => (
+            {media.filter((item) => item.media_type !== 'video').map((item) => (
               <div
                 key={item.id}
                 className="group relative rounded-xl overflow-hidden border border-outline-variant bg-surface-container-lowest cursor-pointer aspect-square"

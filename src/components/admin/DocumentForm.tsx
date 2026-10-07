@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Save, AlertCircle, CheckCircle2 } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Save, AlertCircle, CheckCircle2, Plus, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -22,8 +22,10 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
   const [docDate, setDocDate] = useState(initialData?.doc_date || '2024-01-01')
   const [datePrecision, setDatePrecision] = useState<DatePrecision>(initialData?.date_precision || 'day')
   const [docType, setDocType] = useState<DocType>(initialData?.doc_type || 'document')
-  const [sourceUrl, setSourceUrl] = useState(initialData?.source_url || '')
+  const [videoUrls, setVideoUrls] = useState<string[]>([initialData?.source_url || ''])
+  const [extraMedia, setExtraMedia] = useState<{ file_key: string; media_type: 'image' | 'video' }[]>([])
   const [fileKey, setFileKey] = useState(initialData?.file_key || '')
+  const primaryAssigned = useRef(Boolean(initialData?.file_key))
   const [thumbnailKey, setThumbnailKey] = useState(initialData?.thumbnail_key || '')
   const [coverImageKey, setCoverImageKey] = useState(initialData?.cover_image_key || '')
   const [author, setAuthor] = useState(initialData?.author || '')
@@ -45,6 +47,7 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [mediaReady, setMediaReady] = useState(!initialData?.slug)
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -54,8 +57,48 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
     }).catch(console.error)
   }, [])
 
+  useEffect(() => {
+    if (!initialData?.slug) return
+    let cancelled = false
+    api.getDocumentBySlug(initialData.slug).then((doc) => {
+      if (cancelled) return
+      const videos = [
+        doc.source_url || '',
+        ...(doc.media || [])
+          .filter((item) => item.media_type === 'video')
+          .map((item) => item.file_key || item.url || ''),
+      ].filter((url, index, all) => url && all.indexOf(url) === index)
+      setVideoUrls(videos.length ? videos : [''])
+      setExtraMedia(
+        (doc.media || [])
+          .filter((item) => item.media_type === 'image' && (item.file_key || item.url))
+          .map((item) => ({ file_key: item.file_key || item.url || '', media_type: 'image' as const }))
+      )
+      if (doc.file_key) {
+        setFileKey(doc.file_key)
+        primaryAssigned.current = true
+      }
+      if (doc.thumbnail_key) setThumbnailKey(doc.thumbnail_key)
+      if (doc.body) setBody(doc.body)
+      if (doc.description) setDescription(doc.description)
+      setMediaReady(true)
+    }).catch((err) => {
+      console.error(err)
+      if (!cancelled) {
+        setStatusMsg({ type: 'error', text: 'Não foi possível carregar as mídias. Recarregue antes de salvar.' })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [initialData?.slug])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isEditing && !mediaReady) {
+      setStatusMsg({ type: 'error', text: 'Aguarde o carregamento das mídias antes de salvar.' })
+      return
+    }
     setIsSubmitting(true)
     setStatusMsg(null)
 
@@ -66,7 +109,7 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
       doc_date: docDate,
       date_precision: datePrecision,
       doc_type: docType,
-      source_url: sourceUrl || null,
+      source_url: videoUrls.map((url) => url.trim()).find(Boolean) || null,
       file_key: fileKey || null,
       thumbnail_key: thumbnailKey || null,
       cover_image_key: coverImageKey || null,
@@ -79,6 +122,14 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
       body: body || null,
       categories: selectedCategories,
       tags: selectedTags,
+      media: [
+        ...extraMedia,
+        ...videoUrls
+          .slice(1)
+          .map((url) => url.trim())
+          .filter(Boolean)
+          .map((url) => ({ file_key: url, media_type: 'video' as const })),
+      ],
     }
 
     try {
@@ -177,20 +228,59 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
             <option value="pdf">Arquivo PDF</option>
             <option value="txt">Manuscrito / Texto</option>
             <option value="video_url">Vídeo (YouTube/Vimeo)</option>
-            <option value="video_file">Vídeo (Arquivo R2)</option>
+            <option value="video_file">Vídeo (arquivo)</option>
             <option value="audio">Áudio / Registro Sonoro</option>
             <option value="link">Link Web</option>
           </select>
         </div>
       </div>
 
-      {/* External URL or embeds */}
-      <Input
-        label="URL Externa ou Link do Vídeo (YouTube, etc.)"
-        value={sourceUrl}
-        onChange={(e) => setSourceUrl(e.target.value)}
-        placeholder="https://..."
-      />
+      <div className="space-y-2">
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Input
+              label="URL externa ou link do vídeo (YouTube, etc.)"
+              value={videoUrls[0] || ''}
+              onChange={(e) => setVideoUrls((prev) => [e.target.value, ...prev.slice(1)])}
+              placeholder="https://..."
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 px-3"
+            aria-label="Adicionar outro vídeo"
+            onClick={() => setVideoUrls((prev) => [...prev, ''])}
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
+        {videoUrls.slice(1).map((url, index) => (
+          <div key={index} className="flex items-end gap-2">
+            <div className="flex-1">
+              <Input
+                label={`Vídeo ${index + 2}`}
+                value={url}
+                onChange={(e) => {
+                  const next = [...videoUrls]
+                  next[index + 1] = e.target.value
+                  setVideoUrls(next)
+                }}
+                placeholder="https://..."
+              />
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 px-3 text-rose-400"
+              aria-label="Remover vídeo"
+              onClick={() => setVideoUrls((prev) => prev.filter((_, itemIndex) => itemIndex !== index + 1))}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
 
       {/* Author, Publisher, Location */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -239,15 +329,38 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
         </div>
       </div>
 
-      {/* File Upload to R2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FileUploader
-          label="Arquivo Principal (R2 Storage)"
-          onUploaded={(res) => {
-            setFileKey(res.file_key)
-            if (docType === 'image') setThumbnailKey(res.file_key)
-          }}
-        />
+        <div className="space-y-2">
+          <FileUploader
+            multiple
+            label="Arquivo ou imagens"
+            onUploaded={(res) => {
+              if (!primaryAssigned.current) {
+                primaryAssigned.current = true
+                setFileKey(res.file_key)
+                setThumbnailKey((current: string) => current || res.file_key)
+                return
+              }
+              setExtraMedia((prev) => [...prev, { file_key: res.file_key, media_type: 'image' }])
+            }}
+          />
+          {extraMedia.length > 0 && (
+            <ul className="text-[11px] text-outline space-y-1">
+              {extraMedia.map((item) => (
+                <li key={item.file_key} className="flex items-center justify-between gap-2">
+                  <span className="truncate">{item.file_key}</span>
+                  <button
+                    type="button"
+                    className="text-rose-400"
+                    onClick={() => setExtraMedia((prev) => prev.filter((entry) => entry.file_key !== item.file_key))}
+                  >
+                    Remover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <Input
           label="URL ou Chave da Miniatura (Thumbnail)"
           value={thumbnailKey}
@@ -298,7 +411,7 @@ export function DocumentForm({ initialData, onSaved, onCancel }: DocumentFormPro
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" variant="primary" loading={isSubmitting} className="gap-2">
+        <Button type="submit" variant="primary" loading={isSubmitting} disabled={isEditing && !mediaReady} className="gap-2">
           <Save className="w-4 h-4" />
           <span>{isEditing ? 'Salvar Alterações' : 'Cadastrar no Acervo'}</span>
         </Button>

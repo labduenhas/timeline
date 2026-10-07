@@ -41,6 +41,8 @@ export interface DocumentItem {
   date_precision: DatePrecision
   doc_type: DocType
   source_url?: string | null
+  file_key?: string | null
+  thumbnail_key?: string | null
   thumbnail_url?: string | null
   cover_image_url?: string | null
   file_url?: string | null
@@ -60,6 +62,7 @@ export interface DocumentMedia {
   id: string
   media_type: 'image' | 'pdf' | 'audio' | 'video' | 'attachment'
   caption?: string | null
+  file_key?: string | null
   url: string | null
 }
 

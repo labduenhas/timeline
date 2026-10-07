@@ -200,7 +200,7 @@ export function AdminPage() {
             </span>
           </div>
           <p className="text-xs text-outline mt-1">
-            Cadastre, edite e organize registros no Cloudflare D1 e R2
+            Cadastre, edite e organize registros do acervo
           </p>
         </div>
 

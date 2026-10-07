@@ -30,14 +30,14 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-surface/90 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
-      <div className="h-20 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop flex items-center justify-between gap-4">
+      <div className="h-16 sm:h-20 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop flex items-center justify-between gap-3">
         <div className="flex items-center gap-6 min-w-0">
-          <Link to="/" className="flex items-center gap-3.5 group text-left shrink-0">
-            <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary font-display text-[22px] leading-none transition-transform group-hover:scale-105">
+          <Link to="/" className="flex items-center gap-3 group text-left min-w-0">
+            <div className="w-9 h-9 shrink-0 rounded bg-primary flex items-center justify-center text-on-primary font-display text-[22px] leading-none transition-transform group-hover:scale-105">
               A
             </div>
-            <div className="flex flex-col">
-              <span className="font-display text-[22px] leading-none tracking-tight text-on-surface">
+            <div className="flex flex-col min-w-0">
+              <span className="font-display text-[18px] sm:text-[22px] leading-none tracking-tight text-on-surface truncate">
                 Acervo Timeline
               </span>
               <span className="font-medium text-label-sm uppercase tracking-wider text-outline mt-1 hidden sm:block">
@@ -95,7 +95,7 @@ export function Header() {
         </div>
       </div>
 
-      <nav className="lg:hidden flex items-center gap-5 px-4 sm:px-8 pb-3 overflow-x-auto no-scrollbar">
+      <nav className="lg:hidden flex items-center justify-between gap-3 px-4 pb-3 text-[13px] sm:justify-start sm:gap-6 sm:px-8 sm:text-body-sm">
         {[...navItems, { label: 'Administração', path: '/admin' }].map((item) => {
           const isActive = location.pathname === item.path
           return (
@@ -103,7 +103,7 @@ export function Header() {
               key={item.path}
               to={item.path}
               className={cn(
-                'whitespace-nowrap text-body-sm py-1',
+                'whitespace-nowrap py-1',
                 isActive
                   ? 'text-on-surface border-b-2 border-primary font-semibold'
                   : 'text-on-surface-variant'

@@ -36,7 +36,7 @@ export function DocumentCard({ doc, trackRef, onQuickView }: DocumentCardProps) 
     <article
       ref={cardRef}
       data-year={yearText}
-      className="timeline-card group flex-shrink-0 w-[340px] sm:w-[410px] flex flex-col bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden"
+      className="timeline-card group flex-shrink-0 w-[78vw] max-w-[340px] sm:w-[360px] sm:max-w-none lg:w-[410px] flex flex-col bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden"
     >
       <div className="relative w-full aspect-[4/5] overflow-hidden bg-primary-container">
         <div

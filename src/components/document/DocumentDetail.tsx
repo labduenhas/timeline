@@ -26,22 +26,23 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
   }
 
   return (
-    <article className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-8 space-y-8 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <Link to="/">
+    <article className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-6 sm:py-8 space-y-8 animate-fadeIn">
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/" className="min-w-0">
           <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span>Voltar para a Linha do Tempo</span>
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden">Voltar</span>
+            <span className="hidden sm:inline">Voltar para a Linha do Tempo</span>
           </Button>
         </Link>
-        <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+        <Button variant="outline" size="sm" onClick={handleShare} className="gap-2 shrink-0">
           <Share2 className="w-4 h-4" />
-          <span>Compartilhar</span>
+          <span className="hidden sm:inline">Compartilhar</span>
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="relative rounded-xl overflow-hidden bg-primary-container min-h-[320px] aspect-[4/5] lg:aspect-auto lg:min-h-[560px]">
+        <div className="relative rounded-xl overflow-hidden bg-primary-container aspect-[4/3] sm:aspect-[4/5] lg:aspect-auto lg:min-h-[560px]">
           {doc.cover_image_url || doc.thumbnail_url ? (
             <img
               src={doc.cover_image_url || doc.thumbnail_url || ''}
@@ -70,7 +71,7 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
             ))}
           </div>
 
-          <h1 className="font-display text-4xl sm:text-display-xl text-primary font-normal tracking-tight leading-[1.08]">
+          <h1 className="font-display text-[2rem] sm:text-display-xl text-primary font-normal tracking-tight leading-[1.12]">
             {doc.title}
           </h1>
 
@@ -78,7 +79,7 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
             <p className="font-display italic text-body-lg text-on-surface-variant">{doc.subtitle}</p>
           )}
 
-          <div className="grid grid-cols-2 gap-4 pt-2 text-body-sm">
+          <div className="grid grid-cols-1 gap-3 pt-2 text-body-sm sm:grid-cols-2 sm:gap-4">
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 text-outline mt-0.5" />
               <div>
@@ -123,7 +124,7 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
         title={doc.title}
       />
 
-      <div className="bg-surface-container-lowest border border-outline-variant/70 rounded-2xl p-6 sm:p-8 space-y-6">
+      <div className="bg-surface-container-lowest border border-outline-variant/70 rounded-2xl p-4 sm:p-8 space-y-6">
         {doc.description && (
           <p className="text-body-lg text-on-surface-variant font-display italic border-l-2 border-terracotta pl-4">
             {doc.description}
@@ -162,14 +163,14 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
           <h3 className="font-display text-headline-md text-primary font-normal">
             Outros documentos relacionados
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {doc.related.map((rel) => (
               <Link
                 key={rel.id}
                 to={`/doc/${rel.slug}`}
-                className="group block rounded-xl bg-surface-container-lowest border border-outline-variant/60 overflow-hidden hover:shadow-md transition-all"
+                className="group flex gap-3 rounded-xl bg-surface-container-lowest border border-outline-variant/60 overflow-hidden hover:shadow-md transition-all sm:block"
               >
-                <div className="h-28 bg-surface-container overflow-hidden">
+                <div className="h-24 w-24 shrink-0 bg-surface-container overflow-hidden sm:h-28 sm:w-full">
                   {rel.thumbnail_url ? (
                     <img
                       src={rel.thumbnail_url}
@@ -182,7 +183,7 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
                     </div>
                   )}
                 </div>
-                <div className="p-3">
+                <div className="flex min-w-0 flex-1 flex-col justify-center p-3 sm:block">
                   <span className="text-label-sm text-terracotta font-semibold block">
                     {formatDate(rel.doc_date, 'year')}
                   </span>

@@ -112,7 +112,7 @@ export function TimelineContainer() {
               Catálogo crítico de obras
             </span>
           </div>
-          <h1 className="font-display text-4xl sm:text-display-xl text-primary font-normal tracking-tight leading-[1.08]">
+          <h1 className="font-display text-[2rem] leading-[1.12] sm:text-display-xl sm:leading-[1.08] text-primary font-normal tracking-tight">
             Explore por período e movimento
           </h1>
           <p className="text-body-lg text-on-surface-variant mt-4 max-w-2xl">
@@ -234,7 +234,7 @@ export function TimelineContainer() {
       {loading && visibleItems.length === 0 && !error ? (
         <div className="w-full px-4 sm:px-8 lg:px-margin-desktop py-10 flex gap-8 overflow-x-hidden">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="w-[340px] sm:w-[410px] flex-shrink-0 space-y-3">
+            <div key={i} className="w-[78vw] max-w-[340px] sm:w-[360px] sm:max-w-none lg:w-[410px] flex-shrink-0 space-y-3">
               <Skeleton className="aspect-[4/5] w-full rounded-xl" />
               <Skeleton className="h-4 w-1/3" />
               <Skeleton className="h-5 w-full" />

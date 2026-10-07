@@ -6,6 +6,18 @@
 
 require_once __DIR__ . '/config.php';
 
+if (!function_exists('getallheaders')) {
+    function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (strpos($name, 'HTTP_') !== 0) continue;
+            $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
+            $headers[$key] = $value;
+        }
+        return $headers;
+    }
+}
+
 // Headers globais de CORS e JSON
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
@@ -29,6 +41,7 @@ function getDB() {
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ];
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+            ensureCmsSchema($pdo);
         } catch (PDOException $e) {
             jsonResponse([
                 'error' => 'Falha na conexão com o banco de dados MariaDB',
@@ -79,6 +92,88 @@ function resolveMediaUrl($key) {
         return $key;
     }
     return getUploadsBaseUrl() . '/' . ltrim($key, '/');
+}
+
+function cmsNow() {
+    return date('Y-m-d H:i:s');
+}
+
+function ensureCmsSchema(PDO $db) {
+    $db->exec("CREATE TABLE IF NOT EXISTS site_pages (
+        id VARCHAR(40) PRIMARY KEY,
+        slug VARCHAR(180) NOT NULL UNIQUE,
+        title VARCHAR(255) NOT NULL,
+        body MEDIUMTEXT NULL,
+        is_visible TINYINT(1) NOT NULL DEFAULT 1,
+        sort_order INT NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $db->exec("CREATE TABLE IF NOT EXISTS site_settings (
+        setting_key VARCHAR(64) PRIMARY KEY,
+        setting_value TEXT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pageCount = (int) $db->query('SELECT COUNT(*) FROM site_pages')->fetchColumn();
+    if ($pageCount === 0) {
+        $now = cmsNow();
+        $mission = '<p>O Acervo Timeline reúne, descreve e disponibiliza registros históricos, artísticos e documentais para consulta pública, com ênfase em preservação da memória e leitura crítica das fontes.</p><h3>Metodologia</h3><p>Cada item é catalogado com data, autoria, suporte e contexto. A linha do tempo organiza o acervo por período, sem substituir a ficha completa do documento.</p>';
+        $catalog = '<p>O catálogo público reúne as obras e documentos disponíveis para navegação na linha do tempo e na listagem do acervo. A consulta é aberta; a edição permanece restrita à administração.</p>';
+        $seed = $db->prepare('INSERT INTO site_pages (id, slug, title, body, is_visible, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?)');
+        $seed->execute(['page_missao', 'missao-metodologia', 'Missão & Metodologia', $mission, 10, $now, $now]);
+        $seed->execute(['page_catalogo', 'catalogo-publico', 'Catálogo público', $catalog, 20, $now, $now]);
+    }
+
+    $setCount = (int) $db->query('SELECT COUNT(*) FROM site_settings')->fetchColumn();
+    if ($setCount === 0) {
+        $defaults = [
+            'site_title' => 'Acervo Timeline',
+            'site_subtitle' => 'Preservação da Memória & História',
+            'logo_url' => '',
+            'logo_invert' => '1',
+            'footer_about' => 'Arquivo digital aberto dedicado à documentação, catalogação crítica e conservação preventiva do patrimônio histórico, artístico e cultural.',
+            'footer_copyright' => 'Acervo Timeline & Preservação da Memória.',
+            'footer_credit' => 'Acesso público para pesquisa e patrimônio cultural.',
+            'footer_nav_label' => 'Navegação',
+            'footer_institutional_label' => 'Institucional',
+        ];
+        $insert = $db->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)');
+        foreach ($defaults as $key => $value) {
+            $insert->execute([$key, $value]);
+        }
+    }
+}
+
+function loadSiteSettings(PDO $db) {
+    ensureCmsSchema($db);
+    $rows = $db->query('SELECT setting_key, setting_value FROM site_settings')->fetchAll();
+    $settings = [];
+    foreach ($rows as $row) {
+        $settings[$row['setting_key']] = $row['setting_value'];
+    }
+    return $settings;
+}
+
+function mapSitePage($row, $withBody = true) {
+    $page = [
+        'id' => $row['id'],
+        'slug' => $row['slug'],
+        'title' => $row['title'],
+        'is_visible' => (bool) $row['is_visible'],
+        'sort_order' => (int) $row['sort_order'],
+        'updated_at' => $row['updated_at'] ?? null,
+    ];
+    if ($withBody) {
+        $page['body'] = $row['body'] ?? '';
+    }
+    return $page;
+}
+
+function tryAuth() {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    $token = trim(preg_replace('/^Bearer\s+/i', '', $authHeader));
+    return ADMIN_SECRET !== '' && $token && hash_equals(ADMIN_SECRET, $token);
 }
 
 function slugify($text) {
@@ -731,6 +826,109 @@ if ($path === '/admin/stats' && $method === 'GET') {
         'total_tags' => (int)$tagCount,
         'recent_documents' => $recentDocs,
     ]);
+}
+
+// 14. Páginas institucionais e identidade do site
+if ($path === '/pages' && $method === 'GET') {
+    $db = getDB();
+    $admin = isset($_GET['all']) && $_GET['all'] === '1';
+    if ($admin) requireAuth();
+    $sql = $admin
+        ? 'SELECT * FROM site_pages ORDER BY sort_order ASC, title ASC'
+        : 'SELECT * FROM site_pages WHERE is_visible = 1 ORDER BY sort_order ASC, title ASC';
+    $rows = $db->query($sql)->fetchAll();
+    $items = [];
+    foreach ($rows as $row) {
+        $items[] = mapSitePage($row, $admin);
+    }
+    jsonResponse(['items' => $items]);
+}
+
+if ($path === '/pages' && $method === 'POST') {
+    requireAuth();
+    $db = getDB();
+    $title = trim((string) ($body['title'] ?? ''));
+    if ($title === '') jsonResponse(['error' => 'Informe o título da página.'], 400);
+    $slug = slugify((string) ($body['slug'] ?? $title));
+    $check = $db->prepare('SELECT id FROM site_pages WHERE slug = ?');
+    $check->execute([$slug]);
+    if ($check->fetch()) {
+        $slug .= '-' . bin2hex(random_bytes(2));
+    }
+    $id = 'page_' . bin2hex(random_bytes(8));
+    $now = cmsNow();
+    $visible = !empty($body['is_visible']) ? 1 : 0;
+    $order = isset($body['sort_order']) ? (int) $body['sort_order'] : 100;
+    $stmt = $db->prepare('INSERT INTO site_pages (id, slug, title, body, is_visible, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$id, $slug, $title, (string) ($body['body'] ?? ''), $visible, $order, $now, $now]);
+    jsonResponse(['ok' => true, 'id' => $id, 'slug' => $slug], 201);
+}
+
+if (preg_match('#^/pages/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GET') {
+    $db = getDB();
+    $key = $matches[1];
+    $stmt = $db->prepare('SELECT * FROM site_pages WHERE slug = ? OR id = ? LIMIT 1');
+    $stmt->execute([$key, $key]);
+    $row = $stmt->fetch();
+    if (!$row) jsonResponse(['error' => 'Página não encontrada'], 404);
+    if (!(int) $row['is_visible'] && !tryAuth()) jsonResponse(['error' => 'Página não encontrada'], 404);
+    jsonResponse(mapSitePage($row, true));
+}
+
+if (preg_match('#^/pages/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'PUT') {
+    requireAuth();
+    $db = getDB();
+    $id = $matches[1];
+    $stmt = $db->prepare('SELECT * FROM site_pages WHERE id = ? OR slug = ? LIMIT 1');
+    $stmt->execute([$id, $id]);
+    $row = $stmt->fetch();
+    if (!$row) jsonResponse(['error' => 'Página não encontrada'], 404);
+    $title = array_key_exists('title', $body) ? trim((string) $body['title']) : $row['title'];
+    if ($title === '') jsonResponse(['error' => 'Informe o título da página.'], 400);
+    $slug = array_key_exists('slug', $body) ? slugify((string) $body['slug']) : $row['slug'];
+    if ($slug !== $row['slug']) {
+        $check = $db->prepare('SELECT id FROM site_pages WHERE slug = ? AND id != ?');
+        $check->execute([$slug, $row['id']]);
+        if ($check->fetch()) jsonResponse(['error' => 'Já existe uma página com esse endereço.'], 409);
+    }
+    $pageBody = array_key_exists('body', $body) ? (string) $body['body'] : $row['body'];
+    $visible = array_key_exists('is_visible', $body) ? (!empty($body['is_visible']) ? 1 : 0) : (int) $row['is_visible'];
+    $order = array_key_exists('sort_order', $body) ? (int) $body['sort_order'] : (int) $row['sort_order'];
+    $upd = $db->prepare('UPDATE site_pages SET slug = ?, title = ?, body = ?, is_visible = ?, sort_order = ?, updated_at = ? WHERE id = ?');
+    $upd->execute([$slug, $title, $pageBody, $visible, $order, cmsNow(), $row['id']]);
+    jsonResponse(['ok' => true, 'id' => $row['id'], 'slug' => $slug]);
+}
+
+if (preg_match('#^/pages/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'DELETE') {
+    requireAuth();
+    $db = getDB();
+    $stmt = $db->prepare('DELETE FROM site_pages WHERE id = ? OR slug = ?');
+    $stmt->execute([$matches[1], $matches[1]]);
+    if ($stmt->rowCount() === 0) jsonResponse(['error' => 'Página não encontrada'], 404);
+    jsonResponse(['ok' => true]);
+}
+
+if ($path === '/settings' && $method === 'GET') {
+    $db = getDB();
+    jsonResponse(['settings' => loadSiteSettings($db)]);
+}
+
+if ($path === '/settings' && ($method === 'PUT' || $method === 'POST')) {
+    requireAuth();
+    $db = getDB();
+    $allowed = [
+        'site_title', 'site_subtitle', 'logo_url', 'logo_invert',
+        'footer_about', 'footer_copyright', 'footer_credit',
+        'footer_nav_label', 'footer_institutional_label',
+    ];
+    $incoming = $body['settings'] ?? $body;
+    if (!is_array($incoming)) jsonResponse(['error' => 'Dados inválidos.'], 400);
+    $upsert = $db->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+    foreach ($allowed as $key) {
+        if (!array_key_exists($key, $incoming)) continue;
+        $upsert->execute([$key, (string) $incoming[$key]]);
+    }
+    jsonResponse(['ok' => true, 'settings' => loadSiteSettings($db)]);
 }
 
 // 404 para rotas inexistentes

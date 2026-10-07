@@ -4,12 +4,13 @@ import {
   Lock,
   PlusCircle,
   Layers,
-  BarChart3,
   LogOut,
   FolderPlus,
   Eye,
   FileText,
   Tag,
+  Landmark,
+  PanelBottom,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +18,9 @@ import { Input } from '@/components/ui/Input'
 import { DocumentTable } from '@/components/admin/DocumentTable'
 import { DocumentForm } from '@/components/admin/DocumentForm'
 import { CategoryManager } from '@/components/admin/CategoryManager'
+import { InstitutionalManager } from '@/components/admin/InstitutionalManager'
+import { SiteIdentityManager } from '@/components/admin/SiteIdentityManager'
+import { useSite } from '@/context/SiteContext'
 import type { DocumentItem, Category, Tag as TagType, AdminStats } from '@/types'
 
 export function AdminPage() {
@@ -32,8 +36,9 @@ export function AdminPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<TagType[]>([])
-  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'categories'>('list')
+  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'categories' | 'institutional' | 'footer'>('list')
   const [editingDoc, setEditingDoc] = useState<any | null>(null)
+  const { refreshSite } = useSite()
 
   const verifyAndLogin = async (secret: string) => {
     setIsVerifying(true)
@@ -243,7 +248,7 @@ export function AdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-outline-variant pb-3">
+      <div className="flex items-center gap-2 border-b border-outline-variant pb-3 overflow-x-auto">
         <Button
           variant={activeTab === 'list' ? 'primary' : 'ghost'}
           size="sm"
@@ -282,6 +287,32 @@ export function AdminPage() {
           <FolderPlus className="w-4 h-4" />
           <span>Categorias & Tags</span>
         </Button>
+
+        <Button
+          variant={activeTab === 'institutional' ? 'primary' : 'ghost'}
+          size="sm"
+          onClick={() => {
+            setEditingDoc(null)
+            setActiveTab('institutional')
+          }}
+          className="gap-2"
+        >
+          <Landmark className="w-4 h-4" />
+          <span>Institucional</span>
+        </Button>
+
+        <Button
+          variant={activeTab === 'footer' ? 'primary' : 'ghost'}
+          size="sm"
+          onClick={() => {
+            setEditingDoc(null)
+            setActiveTab('footer')
+          }}
+          className="gap-2"
+        >
+          <PanelBottom className="w-4 h-4" />
+          <span>Rodapé & Identidade</span>
+        </Button>
       </div>
 
       {/* Tab Panels */}
@@ -318,6 +349,10 @@ export function AdminPage() {
           onRefresh={loadAdminData}
         />
       )}
+
+      {activeTab === 'institutional' && <InstitutionalManager onChanged={refreshSite} />}
+
+      {activeTab === 'footer' && <SiteIdentityManager onChanged={refreshSite} />}
     </div>
   )
 }

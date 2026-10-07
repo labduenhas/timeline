@@ -93,6 +93,28 @@ export interface TimelineResponse {
   generated_at: number
 }
 
+export interface SitePage {
+  id: string
+  slug: string
+  title: string
+  body?: string
+  is_visible: boolean
+  sort_order: number
+  updated_at?: string | null
+}
+
+export interface SiteSettings {
+  site_title: string
+  site_subtitle: string
+  logo_url: string
+  logo_invert: string
+  footer_about: string
+  footer_copyright: string
+  footer_credit: string
+  footer_nav_label: string
+  footer_institutional_label: string
+}
+
 export interface AdminStats {
   total_documents: number
   total_views: number

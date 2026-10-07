@@ -5,6 +5,8 @@ import type {
   Category,
   Tag,
   AdminStats,
+  SitePage,
+  SiteSettings,
 } from '@/types'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '')
@@ -189,5 +191,45 @@ export const api = {
 
   getAdminStats: () => {
     return fetchWithRetry<AdminStats>(`${API_BASE}/admin/stats`)
+  },
+
+  getPages: (all = false) => {
+    const q = all ? '?all=1' : ''
+    return fetchWithRetry<{ items: SitePage[] }>(`${API_BASE}/pages${q}`)
+  },
+
+  getPage: (slug: string) => {
+    return fetchWithRetry<SitePage>(`${API_BASE}/pages/${encodeURIComponent(slug)}`)
+  },
+
+  createPage: (data: Partial<SitePage>) => {
+    return fetchWithRetry<{ ok: boolean; id: string; slug: string }>(`${API_BASE}/pages`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  updatePage: (id: string, data: Partial<SitePage>) => {
+    return fetchWithRetry<{ ok: boolean; id: string; slug: string }>(`${API_BASE}/pages/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  deletePage: (id: string) => {
+    return fetchWithRetry<{ ok: boolean }>(`${API_BASE}/pages/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  getSettings: () => {
+    return fetchWithRetry<{ settings: SiteSettings }>(`${API_BASE}/settings`)
+  },
+
+  updateSettings: (settings: Partial<SiteSettings>) => {
+    return fetchWithRetry<{ ok: boolean; settings: SiteSettings }>(`${API_BASE}/settings`, {
+      method: 'PUT',
+      body: JSON.stringify({ settings }),
+    })
   },
 }

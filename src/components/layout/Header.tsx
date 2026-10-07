@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Mark } from './Mark'
 import { ThemeToggle } from './ThemeToggle'
+import { useSite } from '@/context/SiteContext'
 
 const navItems = [
   { label: 'Linha do Tempo', path: '/' },
@@ -21,6 +22,7 @@ function scrollToSection(id: string) {
 export function Header() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { settings } = useSite()
 
   const goToHomeSection = (id: string) => {
     if (location.pathname === '/') {
@@ -40,10 +42,10 @@ export function Header() {
             />
             <div className="flex flex-col min-w-0">
               <span className="font-display text-[18px] sm:text-[22px] leading-none tracking-tight text-on-surface truncate">
-                Acervo Timeline
+                {settings.site_title}
               </span>
               <span className="font-medium text-label-sm uppercase tracking-wider text-outline mt-1 hidden sm:block">
-                Preservação da Memória & História
+                {settings.site_subtitle}
               </span>
             </div>
           </Link>

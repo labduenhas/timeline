@@ -35,9 +35,9 @@ export function Header() {
       <div className="h-16 sm:h-20 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop flex items-center justify-between gap-3">
         <div className="flex items-center gap-6 min-w-0">
           <Link to="/" className="flex items-center gap-3 group text-left min-w-0">
-            <div className="w-9 h-9 shrink-0 rounded bg-primary text-on-primary flex items-center justify-center transition-transform group-hover:scale-105">
-              <Mark className="h-[1.65rem] w-[1.65rem]" />
-            </div>
+            <Mark
+              className="h-[2.475rem] w-[2.475rem] shrink-0 transition-transform group-hover:scale-105"
+            />
             <div className="flex flex-col min-w-0">
               <span className="font-display text-[18px] sm:text-[22px] leading-none tracking-tight text-on-surface truncate">
                 Acervo Timeline

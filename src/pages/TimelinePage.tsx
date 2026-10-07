@@ -50,7 +50,7 @@ export function TimelinePage() {
   return (
     <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-10 space-y-8 animate-fadeIn">
       <div className="max-w-3xl space-y-3">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-terracotta text-white text-label-sm uppercase tracking-widest">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-terracotta text-white dark:text-[#1a1612] text-label-sm uppercase tracking-widest">
           Catálogo
         </span>
         <h1 className="font-display text-4xl sm:text-display-xl text-primary font-normal tracking-tight leading-[1.08]">
@@ -155,13 +155,13 @@ export function TimelinePage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-on-primary gap-2">
+                  <div className="w-full h-full flex flex-col items-center justify-center text-white gap-2">
                     <span className="text-4xl">{getTypeIconEmoji(doc.doc_type)}</span>
                     <span className="text-label-sm uppercase tracking-widest">{getTypeLabel(doc.doc_type)}</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/10 to-transparent flex flex-col justify-end p-6 pointer-events-none">
-                  <h2 className="font-display text-headline-sm text-on-primary font-normal leading-snug">
+                <div className="absolute inset-0 bg-gradient-to-t from-scrim/90 via-scrim/10 to-transparent flex flex-col justify-end p-6 pointer-events-none">
+                  <h2 className="font-display text-headline-sm text-white font-normal leading-snug">
                     {doc.title}
                   </h2>
                 </div>

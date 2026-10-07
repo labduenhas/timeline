@@ -47,7 +47,7 @@ export function DocumentPage() {
   if (error || !doc) {
     return (
       <div className="max-w-md mx-auto my-20 p-8 rounded-3xl bg-surface-container-lowest border border-outline-variant text-center space-y-4 shadow-sm">
-        <AlertCircle className="w-12 h-12 text-rose-700 mx-auto" />
+        <AlertCircle className="w-12 h-12 text-rose-700 dark:text-rose-300 mx-auto" />
         <h2 className="text-xl font-display text-primary">Documento não encontrado</h2>
         <p className="text-sm text-on-surface-variant leading-relaxed">
           {error || 'O documento solicitado não existe ou foi removido do acervo.'}

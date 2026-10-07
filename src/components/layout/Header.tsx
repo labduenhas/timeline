@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Mark } from './Mark'
+import { ThemeToggle } from './ThemeToggle'
 
 const navItems = [
   { label: 'Linha do Tempo', path: '/' },
@@ -70,6 +71,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           <button
             type="button"
             title="Buscar no Acervo"

@@ -98,7 +98,7 @@ export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModa
   return (
     <div
       data-inspector
-      className="fixed inset-0 z-50 bg-primary/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 bg-scrim/70 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -134,7 +134,7 @@ export function DocumentModal({ doc, onClose, onPrevious, onNext }: DocumentModa
               {doc.thumbnail_url ? (
                 <img src={doc.thumbnail_url} alt={doc.title} className="absolute inset-0 h-full w-full object-cover" />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-5xl text-on-primary">
+                <div className="absolute inset-0 flex items-center justify-center text-5xl text-white">
                   {getTypeIconEmoji(doc.doc_type)}
                 </div>
               )}

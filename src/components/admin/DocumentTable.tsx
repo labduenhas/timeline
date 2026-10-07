@@ -163,7 +163,7 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="w-7 h-7 text-terracotta hover:text-[#5c2a16]"
+                        className="w-7 h-7 text-terracotta hover:text-[#5c2a16] dark:hover:text-[#f0c8b4]"
                         title="Editar"
                         onClick={() => onEdit(doc)}
                       >

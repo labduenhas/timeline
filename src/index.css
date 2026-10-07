@@ -2,11 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --terracotta: 140 67 37;
+  --primary: 0 0 0;
+  --on-primary: 255 255 255;
+  --primary-container: 28 27 27;
+  --surface: 249 249 247;
+  --on-surface: 26 28 27;
+  --on-surface-variant: 68 71 72;
+  --outline: 116 120 120;
+  --outline-variant: 196 199 199;
+  --surface-container-lowest: 255 255 255;
+  --surface-container-low: 244 244 242;
+  --surface-container: 238 238 236;
+  --surface-container-high: 232 232 230;
+  --surface-container-highest: 226 227 225;
+  --surface-variant: 226 227 225;
+  --secondary-fixed: 224 224 255;
+  --on-secondary-fixed: 0 1 109;
+  --scrim: 0 0 0;
+  color-scheme: light;
+}
+
+.dark {
+  --terracotta: 224 164 132;
+  --primary: 246 243 236;
+  --on-primary: 22 21 19;
+  --primary-container: 42 39 36;
+  --surface: 22 21 19;
+  --on-surface: 236 232 224;
+  --on-surface-variant: 186 180 168;
+  --outline: 168 160 148;
+  --outline-variant: 120 112 102;
+  --surface-container-lowest: 32 30 27;
+  --surface-container-low: 38 36 32;
+  --surface-container: 46 43 39;
+  --surface-container-high: 56 52 47;
+  --surface-container-highest: 68 63 57;
+  --surface-variant: 68 63 57;
+  --secondary-fixed: 58 58 84;
+  --on-secondary-fixed: 232 232 255;
+  --scrim: 0 0 0;
+  color-scheme: dark;
+}
+
 body {
-  background-color: #f9f9f7;
-  color: #1a1c1b;
+  background-color: rgb(var(--surface));
+  color: rgb(var(--on-surface));
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+}
+
+.dark input:-webkit-autofill,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--on-surface));
+  caret-color: rgb(var(--on-surface));
+  box-shadow: 0 0 0 1000px rgb(var(--surface-container-lowest)) inset;
 }
 
 .no-scrollbar {
@@ -58,7 +110,7 @@ body {
 
 /* Artigo do acervo: um único conjunto de tipos, medidas e cores para texto, HTML, editor e Markdown. */
 .article-body {
-  color: #1a1c1b;
+  color: rgb(var(--on-surface));
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
   line-height: 24px;
@@ -72,7 +124,7 @@ body {
 .article-body h3,
 .article-body h4 {
   margin-top: 1.75rem;
-  color: #1a1c1b;
+  color: rgb(var(--on-surface));
   font-family: 'Newsreader', Georgia, serif;
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -99,12 +151,12 @@ body {
 
 .article-body p,
 .article-body li {
-  color: #444748;
+  color: rgb(var(--on-surface-variant));
 }
 
 .article-body strong,
 .article-body b {
-  color: #1a1c1b;
+  color: rgb(var(--on-surface));
   font-weight: 600;
 }
 
@@ -114,16 +166,16 @@ body {
 }
 
 .article-body a {
-  color: #8c4325;
+  color: rgb(var(--terracotta));
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .article-body blockquote {
   margin-left: 0;
-  border-left: 2px solid #8c4325;
+  border-left: 2px solid rgb(var(--terracotta));
   padding-left: 1rem;
-  color: #444748;
+  color: rgb(var(--on-surface-variant));
   font-family: 'Newsreader', Georgia, serif;
   font-style: italic;
   font-size: 18px;
@@ -155,7 +207,7 @@ body {
 
 .article-body code {
   border-radius: 0.25rem;
-  background: #eeeeec;
+  background: rgb(var(--surface-container));
   padding: 0.1em 0.35em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
@@ -163,9 +215,9 @@ body {
 
 .article-body pre {
   overflow-x: auto;
-  border: 1px solid #c4c7c7;
+  border: 1px solid rgb(var(--outline-variant));
   border-radius: 0.5rem;
-  background: #f4f4f2;
+  background: rgb(var(--surface-container-low));
   padding: 1rem;
 }
 
@@ -176,7 +228,7 @@ body {
 
 .article-body hr {
   border: 0;
-  border-top: 1px solid #c4c7c7;
+  border-top: 1px solid rgb(var(--outline-variant));
 }
 
 .article-body img {
@@ -192,7 +244,7 @@ body {
 
 .article-editor:empty:before {
   content: attr(data-placeholder);
-  color: #747878;
+  color: rgb(var(--outline));
   pointer-events: none;
 }
 

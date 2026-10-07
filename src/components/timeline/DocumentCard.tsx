@@ -56,19 +56,19 @@ export function DocumentCard({ doc, trackRef, onQuickView }: DocumentCardProps) 
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-on-primary gap-2">
+          <div className="w-full h-full flex flex-col items-center justify-center text-white gap-2">
             <span className="text-5xl">{getTypeIconEmoji(doc.doc_type)}</span>
             <span className="text-label-sm uppercase tracking-widest text-surface-variant">
               {getTypeLabel(doc.doc_type)}
             </span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent flex flex-col justify-end p-6 z-10 pointer-events-none">
-          <h2 className="font-display text-headline-sm text-on-primary font-normal leading-snug">
+        <div className="absolute inset-0 bg-gradient-to-t from-scrim/90 via-scrim/20 to-transparent flex flex-col justify-end p-6 z-10 pointer-events-none">
+          <h2 className="font-display text-headline-sm text-white font-normal leading-snug">
             {doc.title}
           </h2>
           {doc.subtitle && (
-            <p className="text-body-sm text-surface-variant font-light mt-1 line-clamp-2">
+            <p className="text-body-sm text-surface-variant dark:text-white/80 font-light mt-1 line-clamp-2">
               {doc.subtitle}
             </p>
           )}

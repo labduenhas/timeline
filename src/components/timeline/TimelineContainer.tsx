@@ -105,7 +105,7 @@ export function TimelineContainer() {
       <section className="max-w-[1440px] mx-auto w-full px-4 sm:px-8 lg:px-margin-desktop pt-8 pb-6">
         <div className="max-w-3xl pb-8">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-terracotta text-white text-label-sm uppercase tracking-widest">
+            <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-terracotta text-white dark:text-[#1a1612] text-label-sm uppercase tracking-widest">
               Arquivo Aberto
             </span>
             <span className="text-label-sm uppercase tracking-widest text-outline">
@@ -242,8 +242,8 @@ export function TimelineContainer() {
           ))}
         </div>
       ) : error && visibleItems.length === 0 ? (
-        <div className="max-w-md mx-auto my-12 p-6 rounded-2xl bg-surface-container-lowest border border-rose-200 text-center space-y-4 shadow-sm">
-          <AlertCircle className="w-12 h-12 text-rose-700 mx-auto" />
+        <div className="max-w-md mx-auto my-12 p-6 rounded-2xl bg-surface-container-lowest border border-rose-200 dark:border-rose-800 text-center space-y-4 shadow-sm">
+          <AlertCircle className="w-12 h-12 text-rose-700 dark:text-rose-300 mx-auto" />
           <h3 className="text-lg font-display text-primary">Falha ao carregar o acervo</h3>
           <p className="text-sm text-on-surface-variant">{error}</p>
           <Button variant="primary" onClick={refetch} className="mx-auto">
@@ -290,7 +290,7 @@ export function TimelineContainer() {
             </div>
             <Link
               to="/timeline"
-              className="inline-flex items-center gap-2 text-label-md font-semibold text-terracotta hover:text-[#5c2a16] transition-colors"
+              className="inline-flex items-center gap-2 text-label-md font-semibold text-terracotta hover:text-[#5c2a16] dark:hover:text-[#f0c8b4] transition-colors"
             >
               Ver todas as {catalogTotal ?? total} obras
               <ArrowRight className="w-4 h-4" />
@@ -309,7 +309,7 @@ export function TimelineContainer() {
                   ) : (
                     <div className="w-full h-full bg-primary-container" />
                   )}
-                  <div className="absolute bottom-4 left-4 bg-primary/80 backdrop-blur-md px-3 py-1 rounded text-on-primary text-label-sm">
+                  <div className="absolute bottom-4 left-4 bg-scrim/80 backdrop-blur-md px-3 py-1 rounded text-white text-label-sm">
                     {hero.categories?.[0]?.name || 'Destaque'}
                   </div>
                 </div>
@@ -337,7 +337,7 @@ export function TimelineContainer() {
                       ) : (
                         <div className="w-full h-full bg-primary-container" />
                       )}
-                      <div className="absolute bottom-4 left-4 bg-primary/80 backdrop-blur-md px-3 py-1 rounded text-on-primary text-label-sm">
+                      <div className="absolute bottom-4 left-4 bg-scrim/80 backdrop-blur-md px-3 py-1 rounded text-white text-label-sm">
                         {item.categories?.[0]?.name || 'Destaque'}
                       </div>
                     </div>

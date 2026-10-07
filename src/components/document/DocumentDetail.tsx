@@ -50,7 +50,7 @@ export function DocumentDetailView({ doc }: DocumentDetailProps) {
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-6xl text-on-primary">
+            <div className="absolute inset-0 flex items-center justify-center text-6xl text-white">
               {getTypeIconEmoji(doc.doc_type)}
             </div>
           )}

@@ -10,6 +10,7 @@ import { DocumentModal } from './DocumentModal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useSite } from '@/context/SiteContext'
 import type { DocumentItem, PeriodBackground, Tag } from '@/types'
 
 function eraLabel(period: PeriodBackground) {
@@ -18,6 +19,7 @@ function eraLabel(period: PeriodBackground) {
 }
 
 export function TimelineContainer() {
+  const { settings } = useSite()
   const location = useLocation()
   const trackRef = useRef<HTMLDivElement>(null)
 
@@ -109,17 +111,17 @@ export function TimelineContainer() {
         <div className="max-w-3xl pb-8">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
             <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-terracotta text-white dark:text-[#1a1612] text-label-sm uppercase tracking-widest">
-              Arquivo Aberto
+              {settings.home_badge}
             </span>
             <span className="text-label-sm uppercase tracking-widest text-outline">
-              Catálogo crítico de obras
+              {settings.home_eyebrow}
             </span>
           </div>
           <h1 className="font-display text-[2rem] leading-[1.12] sm:text-display-xl sm:leading-[1.08] text-primary font-normal tracking-tight">
-            Explore por período e movimento
+            {settings.home_title}
           </h1>
           <p className="text-body-lg text-on-surface-variant mt-4 max-w-2xl">
-            Marcos, iconografias fundadoras e documentos raros do patrimônio visual e político, estruturados em linha contínua do tempo.
+            {settings.home_lead}
           </p>
         </div>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -139,7 +141,7 @@ export function TimelineContainer() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full py-3 pl-11 pr-12 bg-transparent text-on-surface placeholder:text-outline text-body-md focus:outline-none"
-              placeholder="Buscar por título, autor ou ano..."
+              placeholder={settings.home_search_placeholder}
               type="text"
               autoComplete="off"
             />

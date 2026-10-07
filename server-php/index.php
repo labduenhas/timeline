@@ -366,11 +366,36 @@ function ensureCmsSchema(PDO $db) {
             'footer_credit' => 'Acesso público para pesquisa e patrimônio cultural.',
             'footer_nav_label' => 'Navegação',
             'footer_institutional_label' => 'Institucional',
+            'home_badge' => 'Arquivo Aberto',
+            'home_eyebrow' => 'Catálogo crítico de obras',
+            'home_title' => 'Explore por período e movimento',
+            'home_lead' => 'Marcos, iconografias fundadoras e documentos raros do patrimônio visual e político, estruturados em linha contínua do tempo.',
+            'home_search_placeholder' => 'Buscar por título, autor ou ano...',
+            'explore_badge' => 'Catálogo',
+            'explore_title' => 'Explorar acervo histórico',
+            'explore_lead' => 'Pesquise registros, documentos oficiais, imagens e mídias digitalizadas.',
+            'explore_search_placeholder' => 'Buscar por palavras-chave, eventos ou personalidades...',
         ];
         $insert = $db->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)');
         foreach ($defaults as $key => $value) {
             $insert->execute([$key, $value]);
         }
+    }
+
+    $copyDefaults = [
+        'home_badge' => 'Arquivo Aberto',
+        'home_eyebrow' => 'Catálogo crítico de obras',
+        'home_title' => 'Explore por período e movimento',
+        'home_lead' => 'Marcos, iconografias fundadoras e documentos raros do patrimônio visual e político, estruturados em linha contínua do tempo.',
+        'home_search_placeholder' => 'Buscar por título, autor ou ano...',
+        'explore_badge' => 'Catálogo',
+        'explore_title' => 'Explorar acervo histórico',
+        'explore_lead' => 'Pesquise registros, documentos oficiais, imagens e mídias digitalizadas.',
+        'explore_search_placeholder' => 'Buscar por palavras-chave, eventos ou personalidades...',
+    ];
+    $ensureSetting = $db->prepare('INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)');
+    foreach ($copyDefaults as $key => $value) {
+        $ensureSetting->execute([$key, $value]);
     }
 }
 
@@ -1180,6 +1205,8 @@ if ($path === '/settings' && ($method === 'PUT' || $method === 'POST')) {
         'site_title', 'site_subtitle', 'logo_url', 'logo_invert',
         'footer_about', 'footer_copyright', 'footer_credit',
         'footer_nav_label', 'footer_institutional_label',
+        'home_badge', 'home_eyebrow', 'home_title', 'home_lead', 'home_search_placeholder',
+        'explore_badge', 'explore_title', 'explore_lead', 'explore_search_placeholder',
     ];
     $incoming = $body['settings'] ?? $body;
     if (!is_array($incoming)) jsonResponse(['error' => 'Dados inválidos.'], 400);

@@ -11,6 +11,7 @@ import {
   Tag,
   Landmark,
   PanelBottom,
+  Heading,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -20,6 +21,7 @@ import { DocumentForm } from '@/components/admin/DocumentForm'
 import { CategoryManager } from '@/components/admin/CategoryManager'
 import { InstitutionalManager } from '@/components/admin/InstitutionalManager'
 import { SiteIdentityManager } from '@/components/admin/SiteIdentityManager'
+import { PageCopyManager } from '@/components/admin/PageCopyManager'
 import { useSite } from '@/context/SiteContext'
 import type { DocumentItem, Category, Tag as TagType, AdminStats } from '@/types'
 
@@ -40,7 +42,7 @@ export function AdminPage() {
   const [docSearch, setDocSearch] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<TagType[]>([])
-  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'categories' | 'institutional' | 'footer'>('list')
+  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'categories' | 'institutional' | 'footer' | 'copy'>('list')
   const [editingDoc, setEditingDoc] = useState<any | null>(null)
   const { refreshSite } = useSite()
 
@@ -326,6 +328,19 @@ export function AdminPage() {
           <PanelBottom className="w-4 h-4" />
           <span>Rodapé & Identidade</span>
         </Button>
+
+        <Button
+          variant={activeTab === 'copy' ? 'primary' : 'ghost'}
+          size="sm"
+          onClick={() => {
+            setEditingDoc(null)
+            setActiveTab('copy')
+          }}
+          className="gap-2"
+        >
+          <Heading className="w-4 h-4" />
+          <span>Home e Explorar</span>
+        </Button>
       </div>
 
       {/* Tab Panels */}
@@ -375,6 +390,8 @@ export function AdminPage() {
       {activeTab === 'institutional' && <InstitutionalManager onChanged={refreshSite} />}
 
       {activeTab === 'footer' && <SiteIdentityManager onChanged={refreshSite} />}
+
+      {activeTab === 'copy' && <PageCopyManager onChanged={refreshSite} />}
     </div>
   )
 }

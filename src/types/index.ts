@@ -127,6 +127,15 @@ export interface SiteSettings {
   footer_credit: string
   footer_nav_label: string
   footer_institutional_label: string
+  home_badge: string
+  home_eyebrow: string
+  home_title: string
+  home_lead: string
+  home_search_placeholder: string
+  explore_badge: string
+  explore_title: string
+  explore_lead: string
+  explore_search_placeholder: string
 }
 
 export interface AdminStats {

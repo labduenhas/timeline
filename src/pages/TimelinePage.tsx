@@ -6,8 +6,10 @@ import { cn, formatViews, formatYearOnly, getTypeIconEmoji, getTypeLabel } from 
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import type { Category, DocumentItem } from '@/types'
+import { useSite } from '@/context/SiteContext'
 
 export function TimelinePage() {
+  const { settings } = useSite()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [total, setTotal] = useState(0)
@@ -51,13 +53,13 @@ export function TimelinePage() {
     <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-10 space-y-8 animate-fadeIn">
       <div className="max-w-3xl space-y-3">
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-terracotta text-white dark:text-[#1a1612] text-label-sm uppercase tracking-widest">
-          Catálogo
+          {settings.explore_badge}
         </span>
         <h1 className="font-display text-4xl sm:text-display-xl text-primary font-normal tracking-tight leading-[1.08]">
-          Explorar acervo histórico
+          {settings.explore_title}
         </h1>
         <p className="text-body-lg text-on-surface-variant">
-          Pesquise registros, documentos oficiais, imagens e mídias digitalizadas.
+          {settings.explore_lead}
         </p>
       </div>
 
@@ -72,7 +74,7 @@ export function TimelinePage() {
       >
         <input
           type="text"
-          placeholder="Buscar por palavras-chave, eventos ou personalidades..."
+          placeholder={settings.explore_search_placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full py-4 pl-6 pr-16 bg-transparent text-on-surface placeholder:text-outline text-body-md focus:outline-none"

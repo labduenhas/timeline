@@ -11,6 +11,16 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   footer_credit: 'Acesso público para pesquisa e patrimônio cultural.',
   footer_nav_label: 'Navegação',
   footer_institutional_label: 'Institucional',
+  home_badge: 'Arquivo Aberto',
+  home_eyebrow: 'Catálogo crítico de obras',
+  home_title: 'Explore por período e movimento',
+  home_lead:
+    'Marcos, iconografias fundadoras e documentos raros do patrimônio visual e político, estruturados em linha contínua do tempo.',
+  home_search_placeholder: 'Buscar por título, autor ou ano...',
+  explore_badge: 'Catálogo',
+  explore_title: 'Explorar acervo histórico',
+  explore_lead: 'Pesquise registros, documentos oficiais, imagens e mídias digitalizadas.',
+  explore_search_placeholder: 'Buscar por palavras-chave, eventos ou personalidades...',
 }
 
 export const DEFAULT_PAGES: SitePage[] = [

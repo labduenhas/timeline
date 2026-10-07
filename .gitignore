@@ -30,6 +30,7 @@ dist-ssr
 
 # DirectAdmin FTP (produção)
 .ftp.env
+.ftp-api.env
 
 # Segredos locais da API PHP
 server-php/config.local.php

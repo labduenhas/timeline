@@ -86,6 +86,10 @@ export const api = {
     from?: string
     to?: string
     search?: string
+    mode?: 'index'
+    offset?: number
+    limit?: number
+    around_year?: number
   }) => {
     const q = new URLSearchParams()
     if (params?.category) q.set('category', params.category)
@@ -93,6 +97,10 @@ export const api = {
     if (params?.from) q.set('from', params.from)
     if (params?.to) q.set('to', params.to)
     if (params?.search) q.set('search', params.search)
+    if (params?.mode) q.set('mode', params.mode)
+    if (params?.offset != null) q.set('offset', String(params.offset))
+    if (params?.limit != null) q.set('limit', String(params.limit))
+    if (params?.around_year != null) q.set('around_year', String(params.around_year))
     return fetchWithRetry<TimelineResponse>(`${API_BASE}/timeline?${q.toString()}`)
   },
 
@@ -104,6 +112,7 @@ export const api = {
     category?: string
     tag?: string
     type?: string
+    all?: boolean
   }) => {
     const q = new URLSearchParams()
     if (params?.page) q.set('page', params.page.toString())
@@ -112,6 +121,7 @@ export const api = {
     if (params?.category) q.set('category', params.category)
     if (params?.tag) q.set('tag', params.tag)
     if (params?.type) q.set('type', params.type)
+    if (params?.all) q.set('all', '1')
     return fetchWithRetry<{
       items: DocumentItem[]
       total: number

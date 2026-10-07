@@ -1,18 +1,25 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Hand } from 'lucide-react'
-import type { DocumentItem } from '@/types'
+import type { DocumentItem, TimelineIndexItem } from '@/types'
 import { DocumentCard } from './DocumentCard'
+import { indexForYear } from '@/hooks/useTimeline'
+import { Skeleton } from '@/components/ui/Skeleton'
+
+export const DEFAULT_CARD_STEP = 442
+const OVERSCAN = 4
 
 interface TimelineTrackProps {
-  items: DocumentItem[]
+  index: TimelineIndexItem[]
+  cards: Record<string, DocumentItem>
   onQuickViewDoc: (doc: DocumentItem) => void
   containerRef: React.RefObject<HTMLDivElement>
   onActiveIndexChange?: (index: number) => void
+  onVisibleRange?: (start: number, end: number) => void
 }
 
 export function cardStep(track: HTMLElement | null) {
-  const first = track?.querySelector<HTMLElement>('.timeline-card')
-  return first ? first.getBoundingClientRect().width + 32 : 442
+  const card = track?.querySelector<HTMLElement>('.timeline-card')
+  return card ? card.getBoundingClientRect().width + 32 : DEFAULT_CARD_STEP
 }
 
 export function scrollTimelineBy(track: HTMLElement | null, direction: number) {
@@ -20,56 +27,57 @@ export function scrollTimelineBy(track: HTMLElement | null, direction: number) {
   track.scrollBy({ left: direction * cardStep(track), behavior: 'smooth' })
 }
 
-export function scrollTimelineToYear(
+export function scrollTimelineToIndex(
   track: HTMLElement | null,
-  year: number,
+  index: number,
   behavior: ScrollBehavior = 'smooth'
 ) {
   if (!track) return
-  const cards = Array.from(track.querySelectorAll<HTMLElement>('.timeline-card'))
-  if (cards.length === 0) return
-
-  let best = cards[0]
-  let bestDist = Infinity
-  for (const card of cards) {
-    const cardYear = Number(card.dataset.year)
-    if (!Number.isFinite(cardYear)) continue
-    const dist = Math.abs(cardYear - year)
-    if (dist < bestDist || (dist === bestDist && cardYear >= year)) {
-      best = card
-      bestDist = dist
-    }
-  }
-
-  const left = best.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft - 32
-  track.scrollTo({ left, behavior })
+  const step = cardStep(track)
+  track.scrollTo({ left: Math.max(0, index) * step, behavior })
 }
 
-export function scrollTimelineToRange(track: HTMLElement | null, yearStart: number, yearEnd: number) {
-  if (!track) return
-  const cards = Array.from(track.querySelectorAll<HTMLElement>('.timeline-card'))
-  const match = cards.find((card) => {
-    const year = Number(card.dataset.year)
-    return year >= yearStart && year <= yearEnd
-  }) ?? cards.find((card) => Number(card.dataset.year) >= yearStart)
+export function scrollTimelineToYear(
+  track: HTMLElement | null,
+  year: number,
+  dates: TimelineIndexItem[],
+  behavior: ScrollBehavior = 'smooth'
+) {
+  if (!track || dates.length === 0) return
+  scrollTimelineToIndex(track, indexForYear(dates, year), behavior)
+}
 
-  if (!match) return
-  const left = match.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft - 32
-  track.scrollTo({
-    left,
-    behavior: 'smooth',
+export function scrollTimelineToRange(
+  track: HTMLElement | null,
+  yearStart: number,
+  yearEnd: number,
+  dates: TimelineIndexItem[]
+) {
+  if (!track || dates.length === 0) return
+  const match = dates.findIndex((item) => {
+    const year = Number(item.doc_date.slice(0, 4))
+    return year >= yearStart && year <= yearEnd
   })
+  const fallback = dates.findIndex((item) => Number(item.doc_date.slice(0, 4)) >= yearStart)
+  const i = match >= 0 ? match : fallback
+  if (i < 0) return
+  scrollTimelineToIndex(track, i, 'smooth')
 }
 
 const DRAG_THRESHOLD = 6
 
 export function TimelineTrack({
-  items,
+  index,
+  cards,
   onQuickViewDoc,
   containerRef,
   onActiveIndexChange,
+  onVisibleRange,
 }: TimelineTrackProps) {
   const draggedRef = useRef(false)
+  const [step, setStep] = useState(DEFAULT_CARD_STEP)
+  const [range, setRange] = useState({ start: 0, end: 12 })
+  const total = index.length
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +100,23 @@ export function TimelineTrack({
     let startX = 0
     let startScroll = 0
     let dragging = false
+
+    const measure = () => {
+      const next = cardStep(track)
+      if (next > 80) setStep(next)
+    }
+
+    const updateVisible = () => {
+      const width = cardStep(track)
+      if (width > 80) setStep(width)
+      const count = Math.max(1, Math.ceil(track.clientWidth / width) + OVERSCAN * 2)
+      const start = Math.max(0, Math.floor(track.scrollLeft / width) - OVERSCAN)
+      const end = Math.min(total - 1, start + count)
+      setRange({ start, end })
+      onVisibleRange?.(start, end)
+      const current = Math.min(total, Math.max(1, Math.round(track.scrollLeft / width) + 1))
+      onActiveIndexChange?.(current)
+    }
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse' || e.button !== 0) return
@@ -161,13 +186,6 @@ export function TimelineTrack({
       track.scrollLeft += e.deltaY
     }
 
-    const onScroll = () => {
-      const width = cardStep(track)
-      const count = track.querySelectorAll('.timeline-card').length
-      const current = Math.min(count, Math.max(1, Math.round(track.scrollLeft / width) + 1))
-      onActiveIndexChange?.(current)
-    }
-
     track.addEventListener('pointerdown', onPointerDown)
     track.addEventListener('pointermove', onPointerMove)
     track.addEventListener('pointerup', endDrag)
@@ -175,8 +193,10 @@ export function TimelineTrack({
     track.addEventListener('click', onClickCapture, true)
     track.addEventListener('dragstart', onDragStart)
     track.addEventListener('wheel', onWheel, { passive: false })
-    track.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
+    track.addEventListener('scroll', updateVisible, { passive: true })
+    window.addEventListener('resize', measure)
+    measure()
+    updateVisible()
 
     return () => {
       track.removeEventListener('pointerdown', onPointerDown)
@@ -186,26 +206,44 @@ export function TimelineTrack({
       track.removeEventListener('click', onClickCapture, true)
       track.removeEventListener('dragstart', onDragStart)
       track.removeEventListener('wheel', onWheel)
-      track.removeEventListener('scroll', onScroll)
+      track.removeEventListener('scroll', updateVisible)
+      window.removeEventListener('resize', measure)
       track.classList.remove('is-dragging')
     }
-  }, [containerRef, items, onActiveIndexChange])
+  }, [containerRef, total, onActiveIndexChange, onVisibleRange])
+
+  const slots = []
+  for (let i = range.start; i <= range.end; i += 1) {
+    const meta = index[i]
+    if (!meta) continue
+    slots.push({ i, meta, doc: cards[meta.id] })
+  }
 
   return (
     <section className="relative w-full overflow-hidden py-10">
       <div className="absolute top-[48%] left-0 w-full h-[2px] bg-outline-variant opacity-30 pointer-events-none" />
       <div
         ref={containerRef}
-        className="timeline-scroller relative flex gap-8 px-4 sm:px-8 lg:px-margin-desktop py-4 no-scrollbar"
+        className="timeline-scroller relative px-4 sm:px-8 lg:px-margin-desktop py-4 no-scrollbar"
       >
-        {items.map((doc) => (
-          <DocumentCard
-            key={doc.id}
-            doc={doc}
-            trackRef={containerRef}
-            onQuickView={onQuickViewDoc}
-          />
-        ))}
+        <div className="relative" style={{ width: Math.max(step, total * step), minHeight: '28rem' }}>
+          {slots.map(({ i, meta, doc }) => (
+            <div
+              key={meta.id}
+              className="timeline-slot absolute top-0"
+              style={{ left: i * step, width: step, paddingRight: 32 }}
+            >
+              {doc ? (
+                <DocumentCard doc={doc} trackRef={containerRef} onQuickView={onQuickViewDoc} />
+              ) : (
+                <div className="w-full space-y-3">
+                  <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+                  <Skeleton className="h-4 w-1/3" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
       <p className="px-4 sm:px-8 lg:px-margin-desktop text-outline text-label-sm uppercase tracking-widest hidden sm:flex items-center gap-2">
         <Hand className="w-4 h-4" />

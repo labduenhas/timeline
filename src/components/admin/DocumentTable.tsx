@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Edit2, Trash2, Eye, Search, ExternalLink, Star } from 'lucide-react'
+import { Edit2, Trash2, Search, ExternalLink, Star } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, getTypeIconEmoji } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
@@ -8,19 +8,28 @@ import type { DocumentItem } from '@/types'
 
 interface DocumentTableProps {
   documents: DocumentItem[]
+  total: number
+  page: number
+  totalPages: number
+  search: string
+  onSearchChange: (value: string) => void
+  onPageChange: (page: number) => void
   onEdit: (doc: DocumentItem) => void
   onRefresh: () => void
 }
 
-export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTableProps) {
-  const [search, setSearch] = useState('')
+export function DocumentTable({
+  documents,
+  total,
+  page,
+  totalPages,
+  search,
+  onSearchChange,
+  onPageChange,
+  onEdit,
+  onRefresh,
+}: DocumentTableProps) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
-
-  const filteredDocs = documents.filter((d) =>
-    d.title.toLowerCase().includes(search.toLowerCase()) ||
-    (d.author && d.author.toLowerCase().includes(search.toLowerCase())) ||
-    d.doc_date.includes(search)
-  )
 
   const handleDelete = async (id: string, title: string) => {
     if (!window.confirm(`Tem certeza que deseja remover o documento "${title}" do acervo?`)) {
@@ -44,7 +53,7 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
       <div className="p-4 sm:p-6 border-b border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h4 className="text-base font-bold text-on-surface">Catálogo Geral de Documentos</h4>
-          <p className="text-xs text-outline">Total de {documents.length} registros cadastrados</p>
+          <p className="text-xs text-outline">Total de {total} registros cadastrados</p>
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
@@ -52,7 +61,7 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
             type="text"
             placeholder="Filtrar por título ou autor..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary/20"
           />
         </div>
@@ -72,14 +81,14 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant/60">
-            {filteredDocs.length === 0 ? (
+            {documents.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-outline">
                   Nenhum documento encontrado.
                 </td>
               </tr>
             ) : (
-              filteredDocs.map((doc) => (
+              documents.map((doc) => (
                 <tr key={doc.id} className="hover:bg-surface-container transition-colors">
                   {/* Thumbnail & Title */}
                   <td className="py-3 px-4">
@@ -187,6 +196,21 @@ export function DocumentTable({ documents, onEdit, onRefresh }: DocumentTablePro
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-outline-variant text-xs text-outline">
+          <span>
+            Página {page} de {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+              Anterior
+            </Button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+              Próxima
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

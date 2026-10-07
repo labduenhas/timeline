@@ -17,10 +17,6 @@ function eraLabel(period: PeriodBackground) {
   return `${period.year_start} • ${short}`
 }
 
-function matchesDocumentYear(docDate: string, term: string) {
-  return docDate.slice(0, 4).includes(term)
-}
-
 export function TimelineContainer() {
   const location = useLocation()
   const trackRef = useRef<HTMLDivElement>(null)
@@ -31,35 +27,36 @@ export function TimelineContainer() {
   const [quickDoc, setQuickDoc] = useState<DocumentItem | null>(null)
   const [activeIndex, setActiveIndex] = useState(1)
   const [activeEra, setActiveEra] = useState<number | null>(null)
-  const [catalogTotal, setCatalogTotal] = useState<number | null>(null)
-  const [catalogItems, setCatalogItems] = useState<DocumentItem[]>([])
-  const [catalogFeatured, setCatalogFeatured] = useState<DocumentItem[]>([])
   const [tags, setTags] = useState<Tag[]>([])
 
-  const { items, periodBackgrounds, total, loading, error, refetch } = useTimeline({
+  const { index, cards, featured, periodBackgrounds, total, loading, error, refetch, ensureRange } = useTimeline({
     category,
     search,
   })
 
-  const hero = catalogFeatured[0]
-  const side = catalogFeatured.slice(1, 3)
+  const hero = featured[0]
+  const side = featured.slice(1, 3)
 
-  const handleActiveIndex = useCallback((index: number) => {
-    setActiveIndex(index)
+  const handleActiveIndex = useCallback((next: number) => {
+    setActiveIndex(next)
   }, [])
 
-  const handleRulerYear = useCallback((year: number) => {
-    scrollTimelineToYear(trackRef.current, year, 'auto')
-  }, [])
+  const handleVisibleRange = useCallback(
+    (start: number, end: number) => {
+      ensureRange(start, end)
+    },
+    [ensureRange]
+  )
+
+  const handleRulerYear = useCallback(
+    (year: number) => {
+      scrollTimelineToYear(trackRef.current, year, index, 'auto')
+    },
+    [index]
+  )
 
   useEffect(() => {
     api.getCategories().then((res) => setTags(res.tags || [])).catch(console.error)
-    api.getTimeline().then((res) => {
-      const docs = res.items || []
-      setCatalogTotal(res.total)
-      setCatalogItems(docs)
-      setCatalogFeatured(docs.filter((item) => item.is_featured))
-    }).catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -76,21 +73,8 @@ export function TimelineContainer() {
     return () => window.clearTimeout(timer)
   }, [location.hash, loading])
 
-  const visibleItems = useMemo(() => {
-    const term = search.trim()
-    if (!/^\d{2,4}$/.test(term)) return items
-    const seen = new Set(items.map((item) => item.id))
-    const byYear = catalogItems.filter((item) => {
-      if (seen.has(item.id) || !matchesDocumentYear(item.doc_date, term)) return false
-      if (category && !(item.categories || []).some((entry) => entry.slug === category)) return false
-      return true
-    })
-    if (byYear.length === 0) return items
-    return [...items, ...byYear].sort((a, b) => a.doc_date.localeCompare(b.doc_date))
-  }, [items, catalogItems, search, category])
-
   useEffect(() => {
-    const current = visibleItems[activeIndex - 1]
+    const current = index[activeIndex - 1]
     if (!current?.doc_date) {
       setActiveEra(null)
       return
@@ -98,7 +82,7 @@ export function TimelineContainer() {
     const year = Number(current.doc_date.substring(0, 4))
     const match = periodBackgrounds.find((period) => year >= period.year_start && year <= period.year_end)
     setActiveEra(match ? match.year_start : null)
-  }, [activeIndex, visibleItems, periodBackgrounds])
+  }, [activeIndex, index, periodBackgrounds])
 
   const applySearch = (value: string) => {
     setQuery(value)
@@ -106,10 +90,18 @@ export function TimelineContainer() {
   }
 
   const rulerYears = useMemo(
-    () => yearsFromDocuments(visibleItems.map((item) => item.doc_date)),
-    [visibleItems]
+    () => yearsFromDocuments(index.map((item) => item.doc_date)),
+    [index]
   )
-  const rulerYear = Number(visibleItems[activeIndex - 1]?.doc_date?.slice(0, 4)) || rulerYears[0] || null
+  const rulerYear = Number(index[activeIndex - 1]?.doc_date?.slice(0, 4)) || rulerYears[0] || null
+  const neighbor = (delta: number) => {
+    if (!quickDoc) return undefined
+    const pos = index.findIndex((item) => item.id === quickDoc.id)
+    const next = index[pos + delta]
+    if (!next) return undefined
+    const doc = cards[next.id]
+    return doc ? () => setQuickDoc(doc) : undefined
+  }
 
   return (
     <div className="flex flex-col w-full text-on-surface">
@@ -214,14 +206,14 @@ export function TimelineContainer() {
         <div className="w-full bg-surface-container-low py-3">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop flex items-center justify-between gap-6">
             <div className="flex items-center gap-4 sm:gap-8 text-on-surface-variant text-label-sm uppercase tracking-widest overflow-x-auto no-scrollbar">
-              {periodBackgrounds.map((period, index) => (
+              {periodBackgrounds.map((period, periodIndex) => (
                 <span key={period.id} className="flex items-center gap-4 sm:gap-8 shrink-0">
-                  {index > 0 && <span className="text-outline-variant font-light">—</span>}
+                  {periodIndex > 0 && <span className="text-outline-variant font-light">—</span>}
                   <button
                     type="button"
                     onClick={() => {
                       setActiveEra(period.year_start)
-                      scrollTimelineToRange(trackRef.current, period.year_start, period.year_end)
+                      scrollTimelineToRange(trackRef.current, period.year_start, period.year_end, index)
                     }}
                     className={cn(
                       'whitespace-nowrap transition-colors hover:text-primary',
@@ -235,20 +227,20 @@ export function TimelineContainer() {
             </div>
             <div className="hidden lg:flex items-center gap-3 shrink-0">
               <span className="text-label-md text-primary font-medium tracking-tight">
-                {visibleItems.length === 0 ? '0 itens' : `${activeIndex} de ${visibleItems.length} itens`}
+                {index.length === 0 ? '0 itens' : `${activeIndex} de ${index.length} itens`}
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {rulerYears.length > 0 && visibleItems.length > 0 && (
+      {rulerYears.length > 0 && index.length > 0 && (
         <div className="w-full px-4 sm:px-8 lg:px-margin-desktop py-3">
           <YearRuler years={rulerYears} activeYear={rulerYear} onSelectYear={handleRulerYear} />
         </div>
       )}
 
-      {loading && visibleItems.length === 0 && !error ? (
+      {loading && index.length === 0 && !error ? (
         <div className="w-full px-4 sm:px-8 lg:px-margin-desktop py-10 flex gap-8 overflow-x-hidden">
           {[1, 2, 3].map((i) => (
             <div key={i} className="w-[78vw] max-w-[340px] sm:w-[360px] sm:max-w-none lg:w-[410px] flex-shrink-0 space-y-3">
@@ -258,7 +250,7 @@ export function TimelineContainer() {
             </div>
           ))}
         </div>
-      ) : error && visibleItems.length === 0 ? (
+      ) : error && index.length === 0 ? (
         <div className="max-w-md mx-auto my-12 p-6 rounded-2xl bg-surface-container-lowest border border-rose-200 dark:border-rose-800 text-center space-y-4 shadow-sm">
           <AlertCircle className="w-12 h-12 text-rose-700 dark:text-rose-300 mx-auto" />
           <h3 className="text-lg font-display text-primary">Falha ao carregar o acervo</h3>
@@ -267,7 +259,7 @@ export function TimelineContainer() {
             <RefreshCw className="w-4 h-4 mr-2" /> Tentar novamente
           </Button>
         </div>
-      ) : visibleItems.length === 0 ? (
+      ) : index.length === 0 ? (
         <div className="max-w-md mx-auto my-16 p-8 rounded-3xl bg-surface-container-lowest border border-outline-variant text-center space-y-4">
           <FolderArchive className="w-8 h-8 mx-auto text-outline" />
           <h3 className="text-xl font-display text-primary">Nenhum documento encontrado</h3>
@@ -287,14 +279,16 @@ export function TimelineContainer() {
         </div>
       ) : (
         <TimelineTrack
-          items={visibleItems}
+          index={index}
+          cards={cards}
           containerRef={trackRef}
           onQuickViewDoc={setQuickDoc}
           onActiveIndexChange={handleActiveIndex}
+          onVisibleRange={handleVisibleRange}
         />
       )}
 
-      {catalogFeatured.length > 0 && (
+      {featured.length > 0 && (
         <section className="max-w-[1440px] mx-auto w-full px-4 sm:px-8 lg:px-margin-desktop py-16">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-8">
             <div>
@@ -309,7 +303,7 @@ export function TimelineContainer() {
               to="/timeline"
               className="inline-flex items-center gap-2 text-label-md font-semibold text-terracotta hover:text-[#5c2a16] dark:hover:text-[#f0c8b4] transition-colors"
             >
-              Ver todas as {catalogTotal ?? total} obras
+              Ver todas as {total} obras
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -378,22 +372,8 @@ export function TimelineContainer() {
       <DocumentModal
         doc={quickDoc}
         onClose={() => setQuickDoc(null)}
-        onPrevious={
-          quickDoc && visibleItems.findIndex((item) => item.id === quickDoc.id) > 0
-            ? () => {
-                const index = visibleItems.findIndex((item) => item.id === quickDoc.id)
-                setQuickDoc(visibleItems[index - 1])
-              }
-            : undefined
-        }
-        onNext={
-          quickDoc && visibleItems.findIndex((item) => item.id === quickDoc.id) < visibleItems.length - 1
-            ? () => {
-                const index = visibleItems.findIndex((item) => item.id === quickDoc.id)
-                setQuickDoc(visibleItems[index + 1])
-              }
-            : undefined
-        }
+        onPrevious={neighbor(-1)}
+        onNext={neighbor(1)}
       />
     </div>
   )

@@ -86,10 +86,21 @@ export interface PeriodBackground {
   opacity: number
 }
 
+export interface TimelineIndexItem {
+  id: string
+  slug: string
+  doc_date: string
+  is_featured?: boolean
+}
+
 export interface TimelineResponse {
   items: DocumentItem[]
+  featured?: DocumentItem[]
+  index?: TimelineIndexItem[]
   total: number
-  period_backgrounds: PeriodBackground[]
+  offset?: number
+  limit?: number
+  period_backgrounds?: PeriodBackground[]
   generated_at: number
 }
 

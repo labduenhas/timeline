@@ -2,16 +2,23 @@
 // =====================================================================
 // ACERVO TIMELINE — Configurações do Banco e Uploads
 // Edite os dados abaixo com as informações do seu MariaDB no DirectAdmin
+// Senhas reais: use config.local.php (não versionado).
 // =====================================================================
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'anarcopu_timeline');     // Nome do banco criado no DirectAdmin
-define('DB_USER', 'anarcopu_timeline');     // Usuário do banco
-define('DB_PASS', 'SUA_SENHA_AQUI');        // Senha definida no DirectAdmin
-define('DB_CHARSET', 'utf8mb4');
+if (is_file(__DIR__ . '/config.local.php')) {
+    require_once __DIR__ . '/config.local.php';
+}
 
-$adminSecret = getenv('ADMIN_SECRET');
-define('ADMIN_SECRET', is_string($adminSecret) ? $adminSecret : '');
+if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+if (!defined('DB_NAME')) define('DB_NAME', 'anarcopu_timeline');
+if (!defined('DB_USER')) define('DB_USER', 'anarcopu_timeline');
+if (!defined('DB_PASS')) define('DB_PASS', 'SUA_SENHA_AQUI');
+if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
+
+if (!defined('ADMIN_SECRET')) {
+    $adminSecret = getenv('ADMIN_SECRET');
+    define('ADMIN_SECRET', is_string($adminSecret) ? $adminSecret : '');
+}
 
 // Diretório local onde os arquivos e imagens serão salvos
 define('UPLOADS_DIR', __DIR__ . '/uploads');

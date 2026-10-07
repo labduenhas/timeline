@@ -27,3 +27,9 @@ dist-ssr
 # Cloudflare Wrangler
 .wrangler
 .dev.vars
+
+# DirectAdmin FTP (produção)
+.ftp.env
+
+# Segredos locais da API PHP
+server-php/config.local.php

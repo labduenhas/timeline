@@ -305,6 +305,58 @@ body {
   min-width: 100%;
 }
 
+.year-ruler-ticks {
+  position: relative;
+  height: 100%;
+  margin-left: var(--ruler-pad, 40px);
+  margin-right: var(--ruler-pad, 40px);
+  flex: 0 0 auto;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 17px,
+      var(--ruler-ink) 17px,
+      var(--ruler-ink) 18px
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 89px,
+      var(--ruler-ink) 89px,
+      var(--ruler-ink) 90px
+    );
+  background-size: 18px 10px, 90px 16px;
+  background-repeat: repeat-x, repeat-x;
+  background-position: 9px 10px, 9px 10px;
+  opacity: 0.72;
+}
+
+.year-ruler-decade {
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+
+.year-ruler-decade::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 2px;
+  height: 22px;
+  background: var(--ruler-ink);
+  opacity: 0.9;
+  transform: translateX(-50%);
+}
+
 .year-ruler-tick {
   position: relative;
   flex: 0 0 18px;

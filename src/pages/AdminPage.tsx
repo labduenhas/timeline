@@ -34,6 +34,10 @@ export function AdminPage() {
   // Admin Data State
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [docPage, setDocPage] = useState(1)
+  const [docTotal, setDocTotal] = useState(0)
+  const [docPages, setDocPages] = useState(1)
+  const [docSearch, setDocSearch] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<TagType[]>([])
   const [activeTab, setActiveTab] = useState<'list' | 'create' | 'categories' | 'institutional' | 'footer'>('list')
@@ -71,22 +75,31 @@ export function AdminPage() {
     }
   }
 
-  const loadAdminData = async () => {
+  const loadAdminData = async (page = docPage, search = docSearch) => {
     try {
       const [statsRes, docsRes, catRes] = await Promise.all([
         api.getAdminStats().catch(() => null),
-        api.getDocuments({ limit: 50 }),
+        api.getDocuments({ page, limit: 50, search: search || undefined, all: true }),
         api.getCategories(),
       ])
 
       if (statsRes) setStats(statsRes)
       setDocuments(docsRes.items || [])
+      setDocTotal(docsRes.total || 0)
+      setDocPages(docsRes.total_pages || 1)
+      setDocPage(docsRes.page || page)
       setCategories(catRes.categories || [])
       setTags(catRes.tags || [])
     } catch (err) {
       console.error('[loadAdminData error]', err)
     }
   }
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const timer = window.setTimeout(() => loadAdminData(1, docSearch), 320)
+    return () => window.clearTimeout(timer)
+  }, [docSearch])
 
   useEffect(() => {
     if (!token) return
@@ -319,11 +332,20 @@ export function AdminPage() {
       {activeTab === 'list' && (
         <DocumentTable
           documents={documents}
+          total={docTotal}
+          page={docPage}
+          totalPages={docPages}
+          search={docSearch}
+          onSearchChange={(value) => setDocSearch(value)}
+          onPageChange={(next) => {
+            setDocPage(next)
+            loadAdminData(next, docSearch)
+          }}
           onEdit={(doc) => {
             setEditingDoc(doc)
             setActiveTab('create')
           }}
-          onRefresh={loadAdminData}
+          onRefresh={() => loadAdminData(docPage, docSearch)}
         />
       )}
 

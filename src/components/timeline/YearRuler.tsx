@@ -7,10 +7,14 @@ function yearFromScroll(scrollLeft: number, minYear: number, maxYear: number) {
   return Math.min(maxYear, Math.max(minYear, minYear + Math.round(scrollLeft / YEAR_PX)))
 }
 
-function tickKind(year: number) {
-  if (year % 10 === 0) return 'major'
-  if (year % 5 === 0) return 'mid'
-  return 'minor'
+function yearFromPointer(track: HTMLElement, clientX: number, minYear: number, maxYear: number) {
+  const ticks = track.querySelector<HTMLElement>('.year-ruler-ticks')
+  if (!ticks) return yearFromScroll(track.scrollLeft, minYear, maxYear)
+  const rect = ticks.getBoundingClientRect()
+  const x = clientX - rect.left + track.scrollLeft - (parseFloat(getComputedStyle(track).paddingLeft) || 0)
+  const pad = parseFloat(getComputedStyle(ticks).paddingLeft) || 0
+  const year = minYear + Math.round((x - pad) / YEAR_PX)
+  return Math.min(maxYear, Math.max(minYear, year))
 }
 
 interface YearRulerProps {
@@ -26,7 +30,13 @@ export function YearRuler({ years, activeYear, onSelectYear }: YearRulerProps) {
   const minYear = years[0]
   const maxYear = years[years.length - 1]
 
-  const ticks = useMemo(() => years, [years])
+  const decades = useMemo(() => {
+    if (minYear == null || maxYear == null) return []
+    const start = Math.ceil(minYear / 10) * 10
+    const list: number[] = []
+    for (let year = start; year <= maxYear; year += 10) list.push(year)
+    return list
+  }, [minYear, maxYear])
 
   useEffect(() => {
     const track = scrollerRef.current
@@ -40,7 +50,7 @@ export function YearRuler({ years, activeYear, onSelectYear }: YearRulerProps) {
     const observer = new ResizeObserver(syncPad)
     observer.observe(track)
     return () => observer.disconnect()
-  }, [minYear, ticks.length])
+  }, [minYear, years.length])
 
   useEffect(() => {
     const track = scrollerRef.current
@@ -81,7 +91,7 @@ export function YearRuler({ years, activeYear, onSelectYear }: YearRulerProps) {
       startScroll = track.scrollLeft
       dragging = false
       const attr = (e.target as HTMLElement).closest('[data-ruler-year]')?.getAttribute('data-ruler-year')
-      pressYear = attr ? Number(attr) : null
+      pressYear = attr ? Number(attr) : yearFromPointer(track, e.clientX, minYear, maxYear)
       try {
         track.setPointerCapture(e.pointerId)
       } catch {
@@ -153,9 +163,10 @@ export function YearRuler({ years, activeYear, onSelectYear }: YearRulerProps) {
     }
   }, [minYear, maxYear, onSelectYear])
 
-  if (ticks.length === 0 || minYear == null || maxYear == null) return null
+  if (years.length === 0 || minYear == null || maxYear == null) return null
 
   const shownYear = activeYear ?? minYear
+  const tickCount = maxYear - minYear + 1
 
   return (
     <div className="year-ruler" role="group" aria-label="Régua de anos da linha do tempo">
@@ -174,16 +185,20 @@ export function YearRuler({ years, activeYear, onSelectYear }: YearRulerProps) {
         aria-label={`Ano ${shownYear}`}
         role="slider"
       >
-        <div className="year-ruler-track">
-          {ticks.map((year) => (
+        <div
+          className="year-ruler-ticks"
+          style={{ width: tickCount * YEAR_PX }}
+        >
+          {decades.map((year) => (
             <button
               key={year}
               type="button"
               data-ruler-year={year}
-              className={`year-ruler-tick year-ruler-tick-${tickKind(year)}`}
+              className="year-ruler-decade"
+              style={{ left: (year - minYear) * YEAR_PX }}
               aria-label={`Ir para ${year}`}
             >
-              {year % 10 === 0 ? <span className="year-ruler-label">{year}</span> : null}
+              <span className="year-ruler-label">{year}</span>
             </button>
           ))}
         </div>

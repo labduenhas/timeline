@@ -42,20 +42,229 @@ function getDB() {
             ];
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
             ensureCmsSchema($pdo);
+            ensurePerfIndexes($pdo);
         } catch (PDOException $e) {
             jsonResponse([
                 'error' => 'Falha na conexão com o banco de dados MariaDB',
-                'details' => $e->getMessage()
             ], 500);
         }
     }
     return $pdo;
 }
 
-function jsonResponse($data, $status = 200) {
+function jsonResponse($data, $status = 200, $extraHeaders = []) {
     http_response_code($status);
+    foreach ($extraHeaders as $name => $value) {
+        header($name . ': ' . $value);
+    }
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
+}
+
+function clientIp() {
+    $xff = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+    if ($xff !== '') {
+        $first = trim(explode(',', $xff)[0]);
+        if (filter_var($first, FILTER_VALIDATE_IP)) return $first;
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+function schemaHasIndex(PDO $db, $table, $name) {
+    $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?");
+    $stmt->execute([$table, $name]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function documentsHasColumn(PDO $db, $column) {
+    $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'documents' AND column_name = ?");
+    $stmt->execute([$column]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function ensurePerfIndexes(PDO $db) {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    $db->exec("CREATE TABLE IF NOT EXISTS admin_login_attempts (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        ip VARCHAR(45) NOT NULL,
+        attempted_at DATETIME NOT NULL,
+        KEY idx_login_ip_time (ip, attempted_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    try {
+        if (!documentsHasColumn($db, 'doc_year')) {
+            $db->exec("ALTER TABLE documents ADD COLUMN doc_year INT GENERATED ALWAYS AS (CAST(LEFT(doc_date, 4) AS UNSIGNED)) STORED");
+        }
+    } catch (PDOException $e) {
+        // MariaDB antigo ou coluna já existente
+    }
+
+    $indexes = [
+        'idx_docs_public_date' => 'CREATE INDEX idx_docs_public_date ON documents (is_public, deleted_at, doc_date)',
+        'idx_docs_year' => 'CREATE INDEX idx_docs_year ON documents (doc_year)',
+        'idx_docs_featured' => 'CREATE INDEX idx_docs_featured ON documents (is_featured)',
+    ];
+    foreach ($indexes as $name => $sql) {
+        try {
+            if (!schemaHasIndex($db, 'documents', $name)) {
+                $db->exec($sql);
+            }
+        } catch (PDOException $e) {
+            // índice opcional
+        }
+    }
+
+    try {
+        if (!schemaHasIndex($db, 'documents', 'ft_docs_search')) {
+            $db->exec('ALTER TABLE documents ADD FULLTEXT INDEX ft_docs_search (title, description, author)');
+        }
+    } catch (PDOException $e) {
+        // FULLTEXT indisponível nesta versão
+    }
+}
+
+function hasFulltextSearch(PDO $db) {
+    static $has = null;
+    if ($has === null) {
+        $has = schemaHasIndex($db, 'documents', 'ft_docs_search');
+    }
+    return $has;
+}
+
+function timelineFilters(PDO $db, $category, $tags, $from, $to, $search) {
+    $where = 'WHERE d.is_public = 1 AND d.deleted_at IS NULL';
+    $params = [];
+
+    if ($category) {
+        $where .= ' AND EXISTS (SELECT 1 FROM document_categories dc JOIN categories c ON dc.category_id = c.id WHERE dc.document_id = d.id AND c.slug = ?)';
+        $params[] = $category;
+    }
+    if ($from) {
+        $where .= ' AND d.doc_date >= ?';
+        $params[] = $from . '-01-01';
+    }
+    if ($to) {
+        $where .= ' AND d.doc_date <= ?';
+        $params[] = $to . '-12-31';
+    }
+    if ($search) {
+        $term = trim((string) $search);
+        if (preg_match('/^\d{2,4}$/', $term) && documentsHasColumn($db, 'doc_year')) {
+            if (strlen($term) === 4) {
+                $where .= ' AND d.doc_year = ?';
+                $params[] = (int) $term;
+            } else {
+                $where .= ' AND CAST(d.doc_year AS CHAR) LIKE ?';
+                $params[] = $term . '%';
+            }
+        } elseif (hasFulltextSearch($db) && mb_strlen($term) >= 3) {
+            $where .= ' AND MATCH(d.title, d.description, d.author) AGAINST (? IN BOOLEAN MODE)';
+            $params[] = $term;
+        } else {
+            $like = likeContains($term);
+            $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\')";
+            $params[] = $like;
+            $params[] = $like;
+        }
+    }
+    if ($tags) {
+        $tagList = array_values(array_filter(array_map('trim', explode(',', (string) $tags))));
+        if ($tagList) {
+            $inClause = implode(',', array_fill(0, count($tagList), '?'));
+            $where .= " AND EXISTS (SELECT 1 FROM document_tags dt JOIN tags t ON dt.tag_id = t.id WHERE dt.document_id = d.id AND t.slug IN ($inClause))";
+            foreach ($tagList as $tg) {
+                $params[] = $tg;
+            }
+        }
+    }
+
+    return [$where, $params];
+}
+
+function mapTimelineCard($row) {
+    $catSlugs = $row['category_slugs'] ? explode(',', $row['category_slugs']) : [];
+    $catNames = $row['category_names'] ? explode(',', $row['category_names']) : [];
+    $catColors = $row['category_colors'] ? explode(',', $row['category_colors']) : [];
+    $cats = [];
+    foreach ($catSlugs as $i => $slug) {
+        $cats[] = [
+            'slug' => $slug,
+            'name' => $catNames[$i] ?? $slug,
+            'color' => $catColors[$i] ?? '#6366f1',
+        ];
+    }
+    return [
+        'id' => $row['id'],
+        'slug' => $row['slug'],
+        'title' => $row['title'],
+        'subtitle' => $row['subtitle'],
+        'doc_date' => $row['doc_date'],
+        'date_precision' => $row['date_precision'],
+        'doc_type' => $row['doc_type'],
+        'source_url' => $row['source_url'] ?? null,
+        'author' => $row['author'],
+        'location' => $row['location'],
+        'is_public' => true,
+        'is_featured' => (bool) $row['is_featured'],
+        'view_count' => (int) $row['view_count'],
+        'thumbnail_url' => resolveMediaUrl($row['thumbnail_key']),
+        'categories' => $cats,
+        'tags' => $row['tag_names'] ? explode(',', $row['tag_names']) : [],
+    ];
+}
+
+function timelineCardSql($where) {
+    return "
+      SELECT
+        d.id, d.slug, d.title, d.subtitle, d.doc_date, d.date_precision,
+        d.doc_type, d.thumbnail_key, d.author, d.location,
+        d.source_url, d.is_featured, d.view_count,
+        GROUP_CONCAT(DISTINCT c.slug) as category_slugs,
+        GROUP_CONCAT(DISTINCT c.name) as category_names,
+        GROUP_CONCAT(DISTINCT c.color) as category_colors,
+        GROUP_CONCAT(DISTINCT t.name) as tag_names
+      FROM documents d
+      LEFT JOIN document_categories dc ON d.id = dc.document_id
+      LEFT JOIN categories c ON dc.category_id = c.id
+      LEFT JOIN document_tags dt ON d.id = dt.document_id
+      LEFT JOIN tags t ON dt.tag_id = t.id
+      {$where}
+      GROUP BY d.id
+      ORDER BY d.doc_date ASC, d.id ASC
+    ";
+}
+
+function loadPeriodBackgrounds(PDO $db) {
+    $bgStmt = $db->query('SELECT * FROM period_backgrounds ORDER BY year_start ASC');
+    $periodBackgrounds = [];
+    foreach ($bgStmt->fetchAll() as $bg) {
+        $periodBackgrounds[] = [
+            'id' => $bg['id'],
+            'year_start' => (int) $bg['year_start'],
+            'year_end' => (int) $bg['year_end'],
+            'image_url' => resolveMediaUrl($bg['image_key']),
+            'description' => $bg['description'],
+            'opacity' => (float) $bg['opacity'],
+        ];
+    }
+    return $periodBackgrounds;
+}
+
+function fetchTimelineCards(PDO $db, $where, $params, $limit = null, $offset = null) {
+    $sql = timelineCardSql($where);
+    if ($limit !== null) {
+        $sql .= ' LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+    }
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $items = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $items[] = mapTimelineCard($row);
+    }
+    return $items;
 }
 
 function likeContains($term) {
@@ -216,121 +425,82 @@ if ($path === '/timeline' && $method === 'GET') {
     $from = $_GET['from'] ?? null;
     $to = $_GET['to'] ?? null;
     $search = $_GET['search'] ?? null;
+    $mode = $_GET['mode'] ?? '';
+    $aroundYear = isset($_GET['around_year']) ? (int) $_GET['around_year'] : 0;
+    $hasWindow = array_key_exists('offset', $_GET) || array_key_exists('limit', $_GET) || $aroundYear > 0;
+    $limit = min(40, max(1, (int) ($_GET['limit'] ?? 28)));
+    $offset = max(0, (int) ($_GET['offset'] ?? 0));
+    $cacheHeaders = [
+        'Cache-Control' => 'public, max-age=45',
+        'Vary' => 'Accept-Encoding',
+    ];
 
-    $query = "
-      SELECT 
-        d.id, d.slug, d.title, d.subtitle, d.doc_date, d.date_precision,
-        d.doc_type, d.thumbnail_key, d.author, d.location,
-        d.description, d.source_url, d.is_featured, d.view_count,
-        GROUP_CONCAT(DISTINCT c.slug) as category_slugs,
-        GROUP_CONCAT(DISTINCT c.name) as category_names,
-        GROUP_CONCAT(DISTINCT c.color) as category_colors,
-        GROUP_CONCAT(DISTINCT t.name) as tag_names
-      FROM documents d
-      LEFT JOIN document_categories dc ON d.id = dc.document_id
-      LEFT JOIN categories c ON dc.category_id = c.id
-      LEFT JOIN document_tags dt ON d.id = dt.document_id
-      LEFT JOIN tags t ON dt.tag_id = t.id
-      WHERE d.is_public = 1 AND d.deleted_at IS NULL
-    ";
-    $params = [];
+    [$where, $params] = timelineFilters($db, $category, $tags, $from, $to, $search);
 
-    if ($category) {
-        $query .= " AND c.slug = ?";
-        $params[] = $category;
-    }
-    if ($from) {
-        $query .= " AND d.doc_date >= ?";
-        $params[] = "{$from}-01-01";
-    }
-    if ($to) {
-        $query .= " AND d.doc_date <= ?";
-        $params[] = "{$to}-12-31";
-    }
-    if ($search) {
-        $query .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.description LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\' OR SUBSTRING(d.doc_date, 1, 4) LIKE ? ESCAPE '\\\\')";
-        $term = likeContains($search);
-        $params[] = $term;
-        $params[] = $term;
-        $params[] = $term;
-        $params[] = $term;
-    }
-    if ($tags) {
-        $tagList = array_filter(array_map('trim', explode(',', $tags)));
-        if (!empty($tagList)) {
-            $inClause = implode(',', array_fill(0, count($tagList), '?'));
-            $query .= " AND t.slug IN ($inClause)";
-            foreach ($tagList as $tg) $params[] = $tg;
-        }
-    }
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM documents d {$where}");
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
 
-    $query .= " GROUP BY d.id ORDER BY d.doc_date ASC";
-
-    $stmt = $db->prepare($query);
-    $stmt->execute($params);
-    $rows = $stmt->fetchAll();
-
-    $items = [];
-    foreach ($rows as $row) {
-        $catSlugs = $row['category_slugs'] ? explode(',', $row['category_slugs']) : [];
-        $catNames = $row['category_names'] ? explode(',', $row['category_names']) : [];
-        $catColors = $row['category_colors'] ? explode(',', $row['category_colors']) : [];
-
-        $cats = [];
-        foreach ($catSlugs as $i => $slug) {
-            $cats[] = [
-                'slug' => $slug,
-                'name' => $catNames[$i] ?? $slug,
-                'color' => $catColors[$i] ?? '#6366f1'
+    if ($mode === 'index') {
+        $idxStmt = $db->prepare("SELECT d.id, d.slug, d.doc_date, d.is_featured FROM documents d {$where} ORDER BY d.doc_date ASC, d.id ASC");
+        $idxStmt->execute($params);
+        $index = [];
+        foreach ($idxStmt->fetchAll() as $row) {
+            $index[] = [
+                'id' => $row['id'],
+                'slug' => $row['slug'],
+                'doc_date' => $row['doc_date'],
+                'is_featured' => (bool) $row['is_featured'],
             ];
         }
 
-        $items[] = [
-            'id' => $row['id'],
-            'slug' => $row['slug'],
-            'title' => $row['title'],
-            'subtitle' => $row['subtitle'],
-            'description' => $row['description'],
-            'doc_date' => $row['doc_date'],
-            'date_precision' => $row['date_precision'],
-            'doc_type' => $row['doc_type'],
-            'source_url' => $row['source_url'],
-            'author' => $row['author'],
-            'location' => $row['location'],
-            'is_featured' => (bool)$row['is_featured'],
-            'view_count' => (int)$row['view_count'],
-            'thumbnail_url' => resolveMediaUrl($row['thumbnail_key']),
-            'categories' => $cats,
-            'tags' => $row['tag_names'] ? explode(',', $row['tag_names']) : [],
-        ];
+        $featWhere = $where . ' AND d.is_featured = 1';
+        $featured = fetchTimelineCards($db, $featWhere, $params, 3, 0);
+
+        jsonResponse([
+            'index' => $index,
+            'items' => [],
+            'featured' => $featured,
+            'total' => $total,
+            'period_backgrounds' => loadPeriodBackgrounds($db),
+            'generated_at' => time() * 1000,
+        ], 200, $cacheHeaders);
     }
 
-    // Buscar backgrounds de época
-    $bgStmt = $db->query("SELECT * FROM period_backgrounds ORDER BY year_start ASC");
-    $bgs = $bgStmt->fetchAll();
-    $periodBackgrounds = [];
-    foreach ($bgs as $bg) {
-        $periodBackgrounds[] = [
-            'id' => $bg['id'],
-            'year_start' => (int)$bg['year_start'],
-            'year_end' => (int)$bg['year_end'],
-            'image_url' => resolveMediaUrl($bg['image_key']),
-            'description' => $bg['description'] ?? '',
-            'opacity' => (float)$bg['opacity'],
-        ];
+    if ($aroundYear > 0) {
+        $beforeSql = "SELECT COUNT(*) FROM documents d {$where} AND d.doc_date < ?";
+        $beforeStmt = $db->prepare($beforeSql);
+        $beforeStmt->execute(array_merge($params, [sprintf('%04d-01-01', $aroundYear)]));
+        $before = (int) $beforeStmt->fetchColumn();
+        $offset = max(0, $before - intdiv($limit, 2));
     }
 
+    if ($hasWindow) {
+        if ($offset > $total) $offset = $total;
+        $items = fetchTimelineCards($db, $where, $params, $limit, $offset);
+        jsonResponse([
+            'items' => $items,
+            'total' => $total,
+            'offset' => $offset,
+            'limit' => $limit,
+            'generated_at' => time() * 1000,
+        ], 200, $cacheHeaders);
+    }
+
+    $items = fetchTimelineCards($db, $where, $params);
     jsonResponse([
         'items' => $items,
-        'total' => count($items),
-        'period_backgrounds' => $periodBackgrounds,
-        'generated_at' => time() * 1000
-    ]);
+        'total' => $total,
+        'period_backgrounds' => loadPeriodBackgrounds($db),
+        'generated_at' => time() * 1000,
+    ], 200, $cacheHeaders);
 }
 
 // 3. Documentos (Lista Paginada e Detalhes)
 if ($path === '/docs' && $method === 'GET') {
     $db = getDB();
+    $includeAll = isset($_GET['all']) && $_GET['all'] === '1';
+    if ($includeAll) requireAuth();
     $page = max(1, (int)($_GET['page'] ?? 1));
     $limit = min(50, max(1, (int)($_GET['limit'] ?? 20)));
     $offset = ($page - 1) * $limit;
@@ -339,16 +509,30 @@ if ($path === '/docs' && $method === 'GET') {
     $tag = $_GET['tag'] ?? null;
     $docType = $_GET['type'] ?? null;
 
-    $where = "WHERE d.is_public = 1 AND d.deleted_at IS NULL";
+    $where = $includeAll
+        ? "WHERE d.deleted_at IS NULL"
+        : "WHERE d.is_public = 1 AND d.deleted_at IS NULL";
     $params = [];
 
     if ($search) {
-        $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.description LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\' OR SUBSTRING(d.doc_date, 1, 4) LIKE ? ESCAPE '\\\\')";
-        $term = likeContains($search);
-        $params[] = $term;
-        $params[] = $term;
-        $params[] = $term;
-        $params[] = $term;
+        $termRaw = trim((string) $search);
+        if (preg_match('/^\d{2,4}$/', $termRaw) && documentsHasColumn($db, 'doc_year')) {
+            if (strlen($termRaw) === 4) {
+                $where .= " AND d.doc_year = ?";
+                $params[] = (int) $termRaw;
+            } else {
+                $where .= " AND CAST(d.doc_year AS CHAR) LIKE ?";
+                $params[] = $termRaw . '%';
+            }
+        } elseif (hasFulltextSearch($db) && mb_strlen($termRaw) >= 3) {
+            $where .= " AND MATCH(d.title, d.description, d.author) AGAINST (? IN BOOLEAN MODE)";
+            $params[] = $termRaw;
+        } else {
+            $where .= " AND (d.title LIKE ? ESCAPE '\\\\' OR d.author LIKE ? ESCAPE '\\\\')";
+            $term = likeContains($termRaw);
+            $params[] = $term;
+            $params[] = $term;
+        }
     }
     if ($category) {
         $where .= " AND EXISTS (SELECT 1 FROM document_categories dc JOIN categories c ON dc.category_id = c.id WHERE dc.document_id = d.id AND c.slug = ?)";
@@ -372,7 +556,7 @@ if ($path === '/docs' && $method === 'GET') {
       SELECT 
         d.id, d.slug, d.title, d.subtitle, d.description, d.doc_date, d.date_precision,
         d.doc_type, d.thumbnail_key, d.cover_image_key, d.author, d.publisher, d.location,
-        d.is_featured, d.view_count, d.created_at,
+        d.is_featured, d.is_public, d.view_count, d.created_at,
         GROUP_CONCAT(DISTINCT c.name) as category_names,
         GROUP_CONCAT(DISTINCT c.slug) as category_slugs,
         GROUP_CONCAT(DISTINCT c.color) as category_colors,
@@ -419,6 +603,7 @@ if ($path === '/docs' && $method === 'GET') {
             'publisher' => $row['publisher'],
             'location' => $row['location'],
             'is_featured' => (bool)$row['is_featured'],
+            'is_public' => (bool) ($row['is_public'] ?? 1),
             'view_count' => (int)$row['view_count'],
             'thumbnail_url' => resolveMediaUrl($row['thumbnail_key']),
             'cover_image_url' => resolveMediaUrl($row['cover_image_key']),
@@ -446,6 +631,9 @@ if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GE
     $doc = $stmt->fetch();
 
     if (!$doc) {
+        jsonResponse(['error' => 'Documento não encontrado'], 404);
+    }
+    if (!(int) $doc['is_public'] && !tryAuth()) {
         jsonResponse(['error' => 'Documento não encontrado'], 404);
     }
 
@@ -484,14 +672,29 @@ if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GE
         ];
     }
 
-    // Documentos relacionados
+    // Documentos relacionados (mesma categoria ou anos próximos)
     $relStmt = $db->prepare("
-      SELECT id, slug, title, thumbnail_key, doc_date, doc_type
-      FROM documents
-      WHERE id != ? AND is_public = 1 AND deleted_at IS NULL
-      ORDER BY RAND() LIMIT 4
+      SELECT d.id, d.slug, d.title, d.thumbnail_key, d.doc_date, d.doc_type
+      FROM documents d
+      WHERE d.id != ? AND d.is_public = 1 AND d.deleted_at IS NULL
+        AND (
+          EXISTS (
+            SELECT 1 FROM document_categories dc
+            WHERE dc.document_id = d.id
+              AND dc.category_id IN (SELECT category_id FROM document_categories WHERE document_id = ?)
+          )
+          OR ABS(CAST(LEFT(d.doc_date, 4) AS SIGNED) - CAST(LEFT(?, 4) AS SIGNED)) <= 15
+        )
+      ORDER BY
+        (EXISTS (
+          SELECT 1 FROM document_categories dc
+          WHERE dc.document_id = d.id
+            AND dc.category_id IN (SELECT category_id FROM document_categories WHERE document_id = ?)
+        )) DESC,
+        ABS(CAST(LEFT(d.doc_date, 4) AS SIGNED) - CAST(LEFT(?, 4) AS SIGNED)) ASC
+      LIMIT 4
     ");
-    $relStmt->execute([$doc['id']]);
+    $relStmt->execute([$doc['id'], $doc['id'], $doc['doc_date'], $doc['id'], $doc['doc_date']]);
     $relRows = $relStmt->fetchAll();
     $related = [];
     foreach ($relRows as $r) {
@@ -767,8 +970,20 @@ if ($path === '/upload' && $method === 'POST') {
         mkdir(UPLOADS_DIR, 0755, true);
     }
 
-    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $uniqueName = bin2hex(random_bytes(16)) . '.' . strtolower($ext);
+    $mimeExt = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+        'application/pdf' => 'pdf',
+        'text/plain' => 'txt',
+        'video/mp4' => 'mp4',
+        'video/webm' => 'webm',
+        'audio/mpeg' => 'mp3',
+        'audio/ogg' => 'ogg',
+    ];
+    $ext = $mimeExt[$mimeType] ?? 'bin';
+    $uniqueName = bin2hex(random_bytes(16)) . '.' . $ext;
     $targetPath = UPLOADS_DIR . '/' . $uniqueName;
 
     if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
@@ -792,11 +1007,22 @@ if ($path === '/admin/verify' && $method === 'POST') {
     if (ADMIN_SECRET === '') {
         jsonResponse(['error' => 'O painel administrativo não está disponível.'], 503);
     }
+    $db = getDB();
+    $ip = clientIp();
+    $db->prepare('DELETE FROM admin_login_attempts WHERE attempted_at < DATE_SUB(NOW(), INTERVAL 1 DAY)')->execute();
+    $countStmt = $db->prepare('SELECT COUNT(*) FROM admin_login_attempts WHERE ip = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)');
+    $countStmt->execute([$ip]);
+    if ((int) $countStmt->fetchColumn() >= 5) {
+        jsonResponse(['error' => 'Muitas tentativas. Aguarde alguns minutos.'], 429);
+    }
+
     $secret = isset($body['secret']) && is_string($body['secret']) ? $body['secret'] : '';
     $honeypot = isset($body['website']) && is_string($body['website']) ? trim($body['website']) : '';
     if ($honeypot !== '' || !hash_equals(ADMIN_SECRET, $secret)) {
+        $db->prepare('INSERT INTO admin_login_attempts (ip, attempted_at) VALUES (?, NOW())')->execute([$ip]);
         jsonResponse(['error' => 'Chave de administração inválida'], 401);
     }
+    $db->prepare('DELETE FROM admin_login_attempts WHERE ip = ?')->execute([$ip]);
     jsonResponse(['ok' => true, 'valid' => true]);
 }
 

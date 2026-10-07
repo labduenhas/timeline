@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Mark } from './Mark'
 
 export function Footer() {
   return (
@@ -7,8 +8,8 @@ export function Footer() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 pb-8">
           <div className="max-w-md">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-6 h-6 rounded bg-primary text-on-primary flex items-center justify-center font-display text-sm">
-                A
+              <span className="w-6 h-6 rounded bg-primary text-on-primary flex items-center justify-center">
+                <Mark className="h-4 w-4" />
               </span>
               <span className="font-display text-[22px] text-on-surface">Acervo Timeline</span>
             </div>

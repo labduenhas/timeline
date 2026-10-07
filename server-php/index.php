@@ -70,6 +70,37 @@ function clientIp() {
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
 
+function prepareViewCounter(PDO $db) {
+    static $ready = false;
+    if ($ready) return;
+    $ready = true;
+    $db->exec("CREATE TABLE IF NOT EXISTS document_view_hits (
+        document_id VARCHAR(40) NOT NULL,
+        visitor_hash CHAR(64) NOT NULL,
+        viewed_on DATE NOT NULL,
+        PRIMARY KEY (document_id, visitor_hash, viewed_on)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $flag = 'views_zeroed_at';
+    $check = $db->prepare('SELECT setting_value FROM site_settings WHERE setting_key = ?');
+    $check->execute([$flag]);
+    if (!$check->fetch()) {
+        $db->exec('UPDATE documents SET view_count = 0');
+        $db->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)')->execute([$flag, cmsNow()]);
+    }
+}
+
+function recordPublicView(PDO $db, $docId, $currentCount) {
+    prepareViewCounter($db);
+    $currentCount = (int) $currentCount;
+    if (tryAuth()) return $currentCount;
+    $visitor = hash('sha256', clientIp() . '|' . ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    $insert = $db->prepare('INSERT IGNORE INTO document_view_hits (document_id, visitor_hash, viewed_on) VALUES (?, ?, CURDATE())');
+    $insert->execute([$docId, $visitor]);
+    if ($insert->rowCount() < 1) return $currentCount;
+    $db->prepare('UPDATE documents SET view_count = view_count + 1 WHERE id = ?')->execute([$docId]);
+    return $currentCount + 1;
+}
+
 function schemaHasIndex(PDO $db, $table, $name) {
     $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?");
     $stmt->execute([$table, $name]);
@@ -672,6 +703,7 @@ if ($path === '/docs' && $method === 'GET') {
 // 4. Detalhes de Documento por Slug: GET /docs/{slug}
 if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GET') {
     $db = getDB();
+    prepareViewCounter($db);
     $slug = $matches[1];
 
     $stmt = $db->prepare("SELECT * FROM documents WHERE slug = ? AND deleted_at IS NULL");
@@ -685,8 +717,7 @@ if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GE
         jsonResponse(['error' => 'Documento não encontrado'], 404);
     }
 
-    // Incrementa visualização
-    $db->prepare("UPDATE documents SET view_count = view_count + 1 WHERE id = ?")->execute([$doc['id']]);
+    $doc['view_count'] = recordPublicView($db, $doc['id'], $doc['view_count']);
 
     // Categorias
     $catStmt = $db->prepare("
@@ -776,7 +807,7 @@ if (preg_match('#^/docs/([a-zA-Z0-9_-]+)$#', $path, $matches) && $method === 'GE
         'language' => $doc['language'],
         'is_public' => (bool)$doc['is_public'],
         'is_featured' => (bool)$doc['is_featured'],
-        'view_count' => (int)$doc['view_count'] + 1,
+        'view_count' => (int)$doc['view_count'],
         'thumbnail_url' => resolveMediaUrl($doc['thumbnail_key']),
         'cover_image_url' => resolveMediaUrl($doc['cover_image_key']),
         'file_url' => resolveMediaUrl($doc['file_key']),
@@ -1089,6 +1120,7 @@ if ($path === '/admin/verify' && $method === 'POST') {
 if ($path === '/admin/stats' && $method === 'GET') {
     requireAuth();
     $db = getDB();
+    prepareViewCounter($db);
 
     $docCount = $db->query("SELECT COUNT(*) as cnt FROM documents WHERE deleted_at IS NULL")->fetch()['cnt'];
     $viewCount = $db->query("SELECT COALESCE(SUM(view_count), 0) as cnt FROM documents WHERE deleted_at IS NULL")->fetch()['cnt'];

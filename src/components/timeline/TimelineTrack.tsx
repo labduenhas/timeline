@@ -20,6 +20,31 @@ export function scrollTimelineBy(track: HTMLElement | null, direction: number) {
   track.scrollBy({ left: direction * cardStep(track), behavior: 'smooth' })
 }
 
+export function scrollTimelineToYear(
+  track: HTMLElement | null,
+  year: number,
+  behavior: ScrollBehavior = 'smooth'
+) {
+  if (!track) return
+  const cards = Array.from(track.querySelectorAll<HTMLElement>('.timeline-card'))
+  if (cards.length === 0) return
+
+  let best = cards[0]
+  let bestDist = Infinity
+  for (const card of cards) {
+    const cardYear = Number(card.dataset.year)
+    if (!Number.isFinite(cardYear)) continue
+    const dist = Math.abs(cardYear - year)
+    if (dist < bestDist || (dist === bestDist && cardYear >= year)) {
+      best = card
+      bestDist = dist
+    }
+  }
+
+  const left = best.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft - 32
+  track.scrollTo({ left, behavior })
+}
+
 export function scrollTimelineToRange(track: HTMLElement | null, yearStart: number, yearEnd: number) {
   if (!track) return
   const cards = Array.from(track.querySelectorAll<HTMLElement>('.timeline-card'))

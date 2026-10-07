@@ -4,7 +4,8 @@ import { AlertCircle, ArrowLeft, ArrowRight, FolderArchive, RefreshCw, Search, X
 import { useTimeline } from '@/hooks/useTimeline'
 import { api } from '@/lib/api'
 import { FilterBar } from './FilterBar'
-import { TimelineTrack, scrollTimelineBy, scrollTimelineToRange } from './TimelineTrack'
+import { TimelineTrack, scrollTimelineBy, scrollTimelineToRange, scrollTimelineToYear } from './TimelineTrack'
+import { YearRuler, yearsFromDocuments } from './YearRuler'
 import { DocumentModal } from './DocumentModal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
@@ -45,6 +46,10 @@ export function TimelineContainer() {
 
   const handleActiveIndex = useCallback((index: number) => {
     setActiveIndex(index)
+  }, [])
+
+  const handleRulerYear = useCallback((year: number) => {
+    scrollTimelineToYear(trackRef.current, year, 'auto')
   }, [])
 
   useEffect(() => {
@@ -99,6 +104,12 @@ export function TimelineContainer() {
     setQuery(value)
     setSearch(value)
   }
+
+  const rulerYears = useMemo(
+    () => yearsFromDocuments(visibleItems.map((item) => item.doc_date)),
+    [visibleItems]
+  )
+  const rulerYear = Number(visibleItems[activeIndex - 1]?.doc_date?.slice(0, 4)) || rulerYears[0] || null
 
   return (
     <div className="flex flex-col w-full text-on-surface">
@@ -228,6 +239,12 @@ export function TimelineContainer() {
               </span>
             </div>
           </div>
+        </div>
+      )}
+
+      {rulerYears.length > 0 && visibleItems.length > 0 && (
+        <div className="w-full px-4 sm:px-8 lg:px-margin-desktop py-3">
+          <YearRuler years={rulerYears} activeYear={rulerYear} onSelectYear={handleRulerYear} />
         </div>
       )}
 

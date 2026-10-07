@@ -248,6 +248,188 @@ body {
   pointer-events: none;
 }
 
+.year-ruler {
+  --ruler-brass: #8a6a3e;
+  --ruler-brass-dark: #5c4524;
+  --ruler-ink: #3a2a16;
+  --ruler-face: #efe2c6;
+  position: relative;
+  height: 4.75rem;
+  border-radius: 3px;
+  border: 1px solid var(--ruler-brass);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 32%, rgba(90, 60, 20, 0.08) 100%),
+    linear-gradient(90deg, #c9ae7e 0%, var(--ruler-face) 7%, #f6edd8 50%, var(--ruler-face) 93%, #c9ae7e 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -3px 6px rgba(70, 45, 16, 0.16),
+    0 1px 0 var(--ruler-brass-dark),
+    0 6px 14px rgba(0, 0, 0, 0.12);
+  user-select: none;
+}
+
+.dark .year-ruler {
+  --ruler-brass: #c4a36a;
+  --ruler-brass-dark: #8d7044;
+  --ruler-ink: #f3e6c8;
+  --ruler-face: #3a3226;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 28%, rgba(0, 0, 0, 0.35) 100%),
+    linear-gradient(90deg, #2a241c 0%, var(--ruler-face) 8%, #4a4032 50%, var(--ruler-face) 92%, #2a241c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 196, 0.16),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.4),
+    0 1px 0 #1c1812,
+    0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.year-ruler-scroller {
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  cursor: grab;
+  touch-action: pan-x;
+}
+
+.year-ruler-scroller.is-dragging {
+  cursor: grabbing;
+}
+
+.year-ruler-track {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  padding-left: var(--ruler-pad, 40px);
+  padding-right: var(--ruler-pad, 40px);
+  min-width: 100%;
+}
+
+.year-ruler-tick {
+  position: relative;
+  flex: 0 0 18px;
+  width: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: grab;
+}
+
+.year-ruler-tick::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  width: 1px;
+  background: var(--ruler-ink);
+  opacity: 0.38;
+  transform: translateX(-50%);
+}
+
+.year-ruler-tick-minor::after {
+  height: 10px;
+}
+
+.year-ruler-tick-mid::after {
+  height: 16px;
+  opacity: 0.62;
+  width: 1.5px;
+}
+
+.year-ruler-tick-major::after {
+  height: 26px;
+  opacity: 0.92;
+  width: 2px;
+  background: var(--ruler-brass-dark);
+}
+
+.year-ruler-label {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ruler-ink);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.year-ruler-needle {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 3;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #8c4325, #5c2a16);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.dark .year-ruler-needle {
+  background: linear-gradient(180deg, #e0a484, #8c4325);
+}
+
+.year-ruler-bead {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 35% 30%, #f0d3a8, #8c4325 62%, #4a1e10);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.year-ruler-edge {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 2.5rem;
+}
+
+.year-ruler-edge-left {
+  left: 0;
+  background: linear-gradient(90deg, var(--ruler-face), transparent);
+}
+
+.year-ruler-edge-right {
+  right: 0;
+  background: linear-gradient(270deg, var(--ruler-face), transparent);
+}
+
+.year-ruler-readout {
+  pointer-events: none;
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  min-width: 3.2rem;
+  padding: 1px 7px;
+  border-radius: 2px;
+  background: rgba(62, 42, 22, 0.88);
+  color: #f6edd8;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dark .year-ruler-readout {
+  background: rgba(246, 237, 216, 0.92);
+  color: #2a2014;
+}
+
 .swipe-nudge-left,
 .swipe-nudge-right {
   opacity: 0.45;

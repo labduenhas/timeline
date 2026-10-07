@@ -76,6 +76,7 @@ export function TimelineTrack({
 }: TimelineTrackProps) {
   const draggedRef = useRef(false)
   const [step, setStep] = useState(DEFAULT_CARD_STEP)
+  const [trackHeight, setTrackHeight] = useState(900)
   const [range, setRange] = useState({ start: 0, end: 12 })
   const total = index.length
 
@@ -104,6 +105,10 @@ export function TimelineTrack({
     const measure = () => {
       const next = cardStep(track)
       if (next > 80) setStep(next)
+      const card = track.querySelector<HTMLElement>('.timeline-card')
+      if (!card) return
+      const height = Math.ceil(card.getBoundingClientRect().height)
+      if (height > 200) setTrackHeight(height + 40)
     }
 
     const updateVisible = () => {
@@ -210,7 +215,7 @@ export function TimelineTrack({
       window.removeEventListener('resize', measure)
       track.classList.remove('is-dragging')
     }
-  }, [containerRef, total, onActiveIndexChange, onVisibleRange])
+  }, [containerRef, total, onActiveIndexChange, onVisibleRange, Object.keys(cards).length])
 
   const slots = []
   for (let i = range.start; i <= range.end; i += 1) {
@@ -226,7 +231,7 @@ export function TimelineTrack({
         ref={containerRef}
         className="timeline-scroller relative px-4 sm:px-8 lg:px-margin-desktop py-4 no-scrollbar"
       >
-        <div className="relative" style={{ width: Math.max(step, total * step), minHeight: '28rem' }}>
+        <div className="relative" style={{ width: Math.max(step, total * step), height: trackHeight }}>
           {slots.map(({ i, meta, doc }) => (
             <div
               key={meta.id}

@@ -237,7 +237,7 @@ export function TimelineContainer() {
       )}
 
       {rulerYears.length > 0 && index.length > 0 && (
-        <div className="w-full px-4 sm:px-8 lg:px-margin-desktop py-3">
+        <div className="w-full">
           <YearRuler years={rulerYears} activeYear={rulerYear} onSelectYear={handleRulerYear} />
         </div>
       )}

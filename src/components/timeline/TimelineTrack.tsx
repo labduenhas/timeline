@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Hand } from 'lucide-react'
 import type { DocumentItem, TimelineIndexItem } from '@/types'
 import { DocumentCard } from './DocumentCard'
+import { PageRuler } from './PageRuler'
 import { indexForYear } from '@/hooks/useTimeline'
 import { Skeleton } from '@/components/ui/Skeleton'
 
@@ -226,6 +227,7 @@ export function TimelineTrack({
 
   return (
     <section className="relative w-full overflow-hidden py-10">
+      <PageRuler />
       <div className="absolute top-[48%] left-0 w-full h-[2px] bg-outline-variant opacity-30 pointer-events-none" />
       <div
         ref={containerRef}

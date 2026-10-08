@@ -7,7 +7,7 @@ export function Footer() {
   const visiblePages = pages.filter((page) => page.is_visible)
 
   return (
-    <footer className="w-full bg-surface-container-low shadow-[0_-1px_6px_rgba(0,0,0,0.02)] mt-16">
+    <footer className="site-footer w-full border-t border-outline-variant/50 mt-16">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-10">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 pb-8">
           <div className="max-w-md">
@@ -19,7 +19,7 @@ export function Footer() {
           </div>
           <div className="flex flex-wrap gap-12 text-body-sm">
             <div className="flex flex-col gap-2.5">
-              <span className="text-label-sm uppercase tracking-wider text-outline font-semibold">
+              <span className="text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">
                 {settings.footer_nav_label}
               </span>
               <Link to="/" className="text-on-surface-variant hover:text-on-surface transition-colors">
@@ -33,7 +33,7 @@ export function Footer() {
               </Link>
             </div>
             <div className="flex flex-col gap-2.5">
-              <span className="text-label-sm uppercase tracking-wider text-outline font-semibold">
+              <span className="text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">
                 {settings.footer_institutional_label}
               </span>
               {visiblePages.map((page) => (
@@ -48,7 +48,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-body-sm text-outline">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-body-sm text-on-surface-variant">
           <p>
             © {new Date().getFullYear()} {settings.footer_copyright}
           </p>

@@ -127,6 +127,10 @@ export interface SiteSettings {
   footer_credit: string
   footer_nav_label: string
   footer_institutional_label: string
+  footer_image_url: string
+  hero_images: string
+  hero_interval: string
+  hero_kenburns: string
   home_badge: string
   home_eyebrow: string
   home_title: string

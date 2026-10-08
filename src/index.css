@@ -63,19 +63,70 @@ body {
 
 .site-footer {
   background-color: rgb(var(--surface-container-low));
-  background-image:
-    linear-gradient(rgb(var(--surface-container-low) / 0.8), rgb(var(--surface-container-low) / 0.8)),
-    url('/footer-band.webp');
+}
+
+.dark .site-footer {
+  background-color: rgb(var(--surface));
+}
+
+.site-footer-photo {
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
 }
 
-.dark .site-footer {
-  background-color: rgb(var(--surface));
-  background-image:
-    linear-gradient(rgb(var(--surface) / 0.82), rgb(var(--surface) / 0.82)),
-    url('/footer-band.webp');
+.site-footer-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--surface-container-low) / 0.8);
+}
+
+.dark .site-footer-photo::after {
+  background: rgb(var(--surface) / 0.82);
+}
+
+.hero-slide {
+  filter: grayscale(1);
+  transition: opacity 700ms ease;
+}
+
+.hero-slide.is-kenburns {
+  animation-name: hero-kenburns;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes hero-kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+
+.hero-veil {
+  background: linear-gradient(
+    to right,
+    rgb(var(--surface)) 0%,
+    rgb(var(--surface) / 0.92) 28%,
+    rgb(var(--surface) / 0.45) 58%,
+    rgb(var(--surface) / 0) 100%
+  );
+}
+
+@media (max-width: 1023px) {
+  .hero-veil {
+    background: linear-gradient(
+      to bottom,
+      rgb(var(--surface) / 0.94) 0%,
+      rgb(var(--surface) / 0.82) 72%,
+      rgb(var(--surface) / 0.62) 100%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide.is-kenburns {
+    animation: none;
+  }
 }
 
 .no-scrollbar {

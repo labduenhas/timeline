@@ -11,6 +11,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   footer_credit: 'Acesso público para pesquisa e patrimônio cultural.',
   footer_nav_label: 'Navegação',
   footer_institutional_label: 'Institucional',
+  footer_image_url: '/footer-band.webp',
+  hero_images: '[]',
+  hero_interval: '8',
+  hero_kenburns: '0',
   home_badge: 'Arquivo Aberto',
   home_eyebrow: 'Catálogo crítico de obras',
   home_title: 'Explore por período e movimento',
@@ -39,6 +43,24 @@ export const DEFAULT_PAGES: SitePage[] = [
     sort_order: 20,
   },
 ]
+
+export const DEFAULT_FOOTER_IMAGE = '/footer-band.webp'
+
+export function parseHeroImages(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.map((item) => String(item).trim()).filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+export function clampHeroInterval(raw: string): number {
+  const value = Number(raw)
+  if (!Number.isFinite(value)) return 8
+  return Math.min(60, Math.max(3, Math.round(value)))
+}
 
 export function mergeSettings(raw?: Partial<SiteSettings> | Record<string, string> | null): SiteSettings {
   const next = { ...DEFAULT_SETTINGS }

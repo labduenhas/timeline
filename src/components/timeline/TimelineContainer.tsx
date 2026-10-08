@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useSite } from '@/context/SiteContext'
+import { clampHeroInterval, parseHeroImages } from '@/lib/siteDefaults'
+import { HeroBackdrop } from './HeroBackdrop'
 import type { DocumentItem, PeriodBackground, Tag } from '@/types'
 
 function eraLabel(period: PeriodBackground) {
@@ -107,7 +109,13 @@ export function TimelineContainer() {
 
   return (
     <div className="flex flex-col w-full text-on-surface">
-      <section className="max-w-[1440px] mx-auto w-full px-4 sm:px-8 lg:px-margin-desktop pt-8 pb-6">
+      <section className="relative w-full">
+        <HeroBackdrop
+          images={parseHeroImages(settings.hero_images)}
+          intervalSeconds={clampHeroInterval(settings.hero_interval)}
+          kenBurns={settings.hero_kenburns === '1'}
+        />
+        <div className="relative z-10 max-w-[1440px] mx-auto w-full px-4 sm:px-8 lg:px-margin-desktop pt-8 pb-6">
         <div className="max-w-3xl pb-8">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
             <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-terracotta text-white dark:text-[#1a1612] text-label-sm uppercase tracking-widest">
@@ -201,6 +209,7 @@ export function TimelineContainer() {
         )}
         <div className="mt-5">
           <FilterBar category={category} onCategoryChange={setCategory} />
+        </div>
         </div>
       </section>
 

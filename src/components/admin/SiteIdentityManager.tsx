@@ -4,7 +4,7 @@ import { FileUploader } from '@/components/admin/FileUploader'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { api } from '@/lib/api'
-import { DEFAULT_SETTINGS, mergeSettings } from '@/lib/siteDefaults'
+import { DEFAULT_FOOTER_IMAGE, DEFAULT_SETTINGS, mergeSettings } from '@/lib/siteDefaults'
 import type { SiteSettings } from '@/types'
 
 interface SiteIdentityManagerProps {
@@ -129,6 +129,51 @@ export function SiteIdentityManager({ onChanged }: SiteIdentityManagerProps) {
           value={draft.footer_credit}
           onChange={(e) => patch('footer_credit', e.target.value)}
         />
+        <div className="space-y-3 border-t border-outline-variant/60 pt-4">
+          <p className="text-xs text-on-surface-variant leading-relaxed">
+            Imagem panorâmica, ideal 1920 × 480 px. Ela cobre a largura do rodapé e é cortada na altura.
+          </p>
+          <FileUploader
+            label="Imagem de fundo do rodapé"
+            accept="image/png,image/jpeg,image/webp"
+            onUploaded={(result) => patch('footer_image_url', result.public_url)}
+          />
+          {draft.footer_image_url ? (
+            <div className="space-y-2">
+              <img
+                src={draft.footer_image_url}
+                alt=""
+                className="h-24 w-full rounded-lg object-cover border border-outline-variant"
+              />
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  className="text-xs text-outline hover:text-on-surface"
+                  onClick={() => patch('footer_image_url', '')}
+                >
+                  Remover imagem
+                </button>
+                {draft.footer_image_url !== DEFAULT_FOOTER_IMAGE && (
+                  <button
+                    type="button"
+                    className="text-xs text-outline hover:text-on-surface"
+                    onClick={() => patch('footer_image_url', DEFAULT_FOOTER_IMAGE)}
+                  >
+                    Usar a faixa original
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="text-xs text-outline hover:text-on-surface"
+              onClick={() => patch('footer_image_url', DEFAULT_FOOTER_IMAGE)}
+            >
+              Usar a faixa original
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-xs text-rose-700 dark:text-rose-300">{error}</p>}

@@ -6,9 +6,18 @@ export function Footer() {
   const { settings, pages } = useSite()
   const visiblePages = pages.filter((page) => page.is_visible)
 
+  const photo = settings.footer_image_url.trim()
+
   return (
-    <footer className="site-footer w-full border-t border-outline-variant/50 mt-16">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-10">
+    <footer className="site-footer relative w-full overflow-hidden border-t border-outline-variant/50 mt-16">
+      {photo && (
+        <div
+          aria-hidden
+          className="site-footer-photo absolute inset-0"
+          style={{ backgroundImage: `url("${photo.replace(/"/g, '')}")` }}
+        />
+      )}
+      <div className="relative max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-10">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 pb-8">
           <div className="max-w-md">
             <div className="flex items-center gap-2 mb-2">

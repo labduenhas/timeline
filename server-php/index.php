@@ -397,6 +397,10 @@ function ensureCmsSchema(PDO $db) {
             'footer_credit' => 'Acesso público para pesquisa e patrimônio cultural.',
             'footer_nav_label' => 'Navegação',
             'footer_institutional_label' => 'Institucional',
+            'footer_image_url' => '/footer-band.webp',
+            'hero_images' => '[]',
+            'hero_interval' => '8',
+            'hero_kenburns' => '0',
             'home_badge' => 'Arquivo Aberto',
             'home_eyebrow' => 'Catálogo crítico de obras',
             'home_title' => 'Explore por período e movimento',
@@ -423,6 +427,10 @@ function ensureCmsSchema(PDO $db) {
         'explore_title' => 'Explorar acervo histórico',
         'explore_lead' => 'Pesquise registros, documentos oficiais, imagens e mídias digitalizadas.',
         'explore_search_placeholder' => 'Buscar por palavras-chave, eventos ou personalidades...',
+        'footer_image_url' => '/footer-band.webp',
+        'hero_images' => '[]',
+        'hero_interval' => '8',
+        'hero_kenburns' => '0',
     ];
     $ensureSetting = $db->prepare('INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)');
     foreach ($copyDefaults as $key => $value) {
@@ -1267,7 +1275,8 @@ if ($path === '/settings' && ($method === 'PUT' || $method === 'POST')) {
     $allowed = [
         'site_title', 'site_subtitle', 'logo_url', 'logo_invert',
         'footer_about', 'footer_copyright', 'footer_credit',
-        'footer_nav_label', 'footer_institutional_label',
+        'footer_nav_label', 'footer_institutional_label', 'footer_image_url',
+        'hero_images', 'hero_interval', 'hero_kenburns',
         'home_badge', 'home_eyebrow', 'home_title', 'home_lead', 'home_search_placeholder',
         'explore_badge', 'explore_title', 'explore_lead', 'explore_search_placeholder',
     ];

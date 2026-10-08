@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, FolderArchive, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, FolderArchive, Search } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatViews, formatYearOnly, getTypeIconEmoji, getTypeLabel } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -8,24 +8,45 @@ import { Button } from '@/components/ui/Button'
 import type { Category, DocumentItem } from '@/types'
 import { useSite } from '@/context/SiteContext'
 
+const PAGE_SIZES = [9, 18, 36] as const
+type PageSize = (typeof PAGE_SIZES)[number]
+
+function pageWindow(current: number, total: number): Array<number | 'gap'> {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1)
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  const pages: Array<number | 'gap'> = [1]
+  if (start > 2) pages.push('gap')
+  for (let number = start; number <= end; number += 1) pages.push(number)
+  if (end < total - 1) pages.push('gap')
+  pages.push(total)
+  return pages
+}
+
 export function TimelinePage() {
   const { settings } = useSite()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSize>(9)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
 
-  const loadDocs = async (nextPage = page, nextSearch = search, nextCategory = selectedCategory) => {
+  const loadDocs = async (
+    nextPage = page,
+    nextSearch = search,
+    nextCategory = selectedCategory,
+    nextLimit = pageSize
+  ) => {
     setLoading(true)
     try {
       const res = await api.getDocuments({
         page: nextPage,
-        limit: 12,
+        limit: nextLimit,
         search: nextSearch || undefined,
         category: nextCategory || undefined,
       })
@@ -47,7 +68,16 @@ export function TimelinePage() {
 
   useEffect(() => {
     loadDocs()
-  }, [page, selectedCategory])
+  }, [page, selectedCategory, pageSize])
+
+  const skipScroll = useRef(true)
+  useEffect(() => {
+    if (skipScroll.current) {
+      skipScroll.current = false
+      return
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [page])
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-margin-desktop py-10 space-y-8 animate-fadeIn">
@@ -193,17 +223,73 @@ export function TimelinePage() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-4">
-          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Anterior
-          </Button>
-          <span className="text-label-sm text-outline px-2">
-            Página {page} de {totalPages}
-          </span>
-          <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            Próxima
-          </Button>
+      {total > 0 && (
+        <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-label-sm uppercase tracking-widest text-outline">Por página</span>
+            {PAGE_SIZES.map((size) => (
+              <button
+                key={size}
+                type="button"
+                aria-pressed={pageSize === size}
+                onClick={() => {
+                  setPageSize(size)
+                  setPage(1)
+                }}
+                className={cn(
+                  'min-w-10 h-10 px-3 rounded-full text-label-md font-semibold',
+                  pageSize === size
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-highest'
+                )}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+          <nav className="flex items-center justify-center gap-1.5" aria-label="Paginação do acervo">
+            <Button
+              variant="secondary"
+              size="icon"
+              aria-label="Página anterior"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            {pageWindow(page, totalPages).map((item, index) =>
+              item === 'gap' ? (
+                <span key={`gap-${index}`} className="px-1 text-outline">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={item}
+                  type="button"
+                  aria-label={`Página ${item}`}
+                  aria-current={item === page ? 'page' : undefined}
+                  onClick={() => setPage(item)}
+                  className={cn(
+                    'min-w-10 h-10 px-3 rounded-full text-label-md font-semibold',
+                    item === page
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container text-on-surface hover:bg-surface-container-highest'
+                  )}
+                >
+                  {item}
+                </button>
+              )
+            )}
+            <Button
+              variant="secondary"
+              size="icon"
+              aria-label="Próxima página"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </nav>
         </div>
       )}
     </div>
